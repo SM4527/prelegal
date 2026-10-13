@@ -1,0 +1,66 @@
+{
+  "source": "https://github.com/CommonPaper",
+  "license": "CC BY 4.0",
+  "templates": [
+    {
+      "name": "Mutual Non-Disclosure Agreement",
+      "description": "Standard Terms for a mutual NDA allowing both parties to share confidential information for a defined purpose, with obligations on use, protection, and return of that information.",
+      "filename": "templates/Mutual-NDA.md"
+    },
+    {
+      "name": "Mutual Non-Disclosure Agreement Cover Page",
+      "description": "Cover Page for the Mutual NDA where the parties fill in the purpose, effective date, term, governing law, jurisdiction, and signatures; it incorporates the Mutual NDA Standard Terms.",
+      "filename": "templates/Mutual-NDA-coverpage.md"
+    },
+    {
+      "name": "Cloud Service Agreement",
+      "description": "Standard Terms for selling and buying cloud software (SaaS), covering access and use, restrictions, fees, confidentiality, warranties, liability, indemnification, and term.",
+      "filename": "templates/CSA.md"
+    },
+    {
+      "name": "Software License Agreement",
+      "description": "Standard Terms for licensing installable or on-premise software to a customer, covering the license grant, restrictions, support, fees, warranties, liability, and term.",
+      "filename": "templates/Software-License-Agreement.md"
+    },
+    {
+      "name": "Service Level Agreement",
+      "description": "Standard Terms that add uptime targets, response time commitments, and service credits to a cloud service agreement.",
+      "filename": "templates/SLA.md"
+    },
+    {
+      "name": "Data Processing Agreement",
+      "description": "Standard Terms governing how a provider processes customer personal data, addressing GDPR and other privacy laws, subprocessors, security, and international data transfers.",
+      "filename": "templates/DPA.md"
+    },
+    {
+      "name": "Business Associate Agreement",
+      "description": "Standard Terms for HIPAA compliance that set out how a provider (business associate) may use, disclose, and safeguard protected health information (PHI).",
+      "filename": "templates/BAA.md"
+    },
+    {
+      "name": "AI Addendum",
+      "description": "Addendum to a product agreement covering the customer's use of AI services, including input, output, model training restrictions, and related responsibilities.",
+      "filename": "templates/AI-Addendum.md"
+    },
+    {
+      "name": "Professional Services Agreement",
+      "description": "Standard Terms for engaging a provider to perform professional services under statements of work (SOWs), covering deliverables, fees, IP, confidentiality, and liability.",
+      "filename": "templates/PSA.md"
+    },
+    {
+      "name": "Design Partner Agreement",
+      "description": "Standard Terms for giving an early design partner access to a pre-release product in exchange for feedback, with confidentiality and IP ownership terms.",
+      "filename": "templates/Design-Partner-Agreement.md"
+    },
+    {
+      "name": "Pilot Agreement",
+      "description": "Standard Terms for a limited-time pilot or trial that lets a customer evaluate a product before purchasing, covering access, restrictions, and term.",
+      "filename": "templates/Pilot-Agreement.md"
+    },
+    {
+      "name": "Partnership Agreement",
+      "description": "Standard Terms for business partnerships where each party performs agreed obligations, covering payments, trademark licensing, privacy, escalation, and confidentiality.",
+      "filename": "templates/Partnership-Agreement.md"
+    }
+  ]
+}
