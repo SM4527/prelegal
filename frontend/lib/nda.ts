@@ -14,12 +14,22 @@ export interface Party {
   noticeAddress: string;
 }
 
+/**
+ * A term that lasts a fixed number of years, or is open-ended ("continues until
+ * terminated" for the MNDA term, "in perpetuity" for confidentiality). `years` is
+ * kept while open-ended so switching back restores the user's choice.
+ */
+export interface Term {
+  fixed: boolean;
+  years: number;
+}
+
 export interface NdaFormData {
   purpose: string;
-  /** ISO date (yyyy-mm-dd), or empty when not yet chosen. */
+  /** ISO date (yyyy-mm-dd), or empty when not chosen (the UI then uses today). */
   effectiveDate: string;
-  mndaTerm: { type: "expires"; years: number } | { type: "continues" };
-  confidentialityTerm: { type: "years"; years: number } | { type: "perpetual" };
+  mndaTerm: Term;
+  confidentialityTerm: Term;
   governingLaw: string;
   jurisdiction: string;
   modifications: string;
@@ -37,13 +47,13 @@ const emptyParty: Party = { name: "", title: "", company: "", noticeAddress: "" 
 export const defaultFormData: NdaFormData = {
   purpose: "Evaluating whether to enter into a business relationship with the other party.",
   effectiveDate: "",
-  mndaTerm: { type: "expires", years: 1 },
-  confidentialityTerm: { type: "years", years: 1 },
+  mndaTerm: { fixed: true, years: 1 },
+  confidentialityTerm: { fixed: true, years: 1 },
   governingLaw: "",
   jurisdiction: "",
   modifications: "",
-  party1: emptyParty,
-  party2: emptyParty,
+  party1: { ...emptyParty },
+  party2: { ...emptyParty },
 };
 
 /** Returns today's date in the local timezone as yyyy-mm-dd. */
@@ -71,20 +81,29 @@ export function escapeMarkdown(text: string): string {
   return text.replace(/[!-/:-@[-`{-~]/g, "\\$&");
 }
 
-/** Escapes a value for an inline position, falling back to a bracketed placeholder. */
-function inline(value: string, placeholder: string): string {
+/** Escapes a single-line value (newlines become spaces), or the fallback when empty. */
+function inline(value: string, fallback: string): string {
   const text = value.trim().replace(/\s*\n\s*/g, " ");
-  return escapeMarkdown(text || `[${placeholder}]`);
+  return escapeMarkdown(text || fallback);
 }
 
-/** Escapes a value that may span several lines, keeping its line breaks. */
-function multiline(value: string, placeholder: string): string {
-  const lines = value.trim().split(/\r?\n/).map((line) => escapeMarkdown(line.trim()));
-  return lines.join("\\\n") || escapeMarkdown(`[${placeholder}]`);
+/** Escapes a value that may span several lines, keeping its line breaks, or the fallback when empty. */
+function multiline(value: string, fallback: string): string {
+  const text = value.trim();
+  if (!text) return escapeMarkdown(fallback);
+  return text
+    .split(/\r?\n/)
+    .map((line) => escapeMarkdown(line.trim()))
+    .join("\\\n");
 }
 
 function years(n: number): string {
   return `${n} year${n === 1 ? "" : "s"}`;
+}
+
+/** A term's length for the cover page: "2 years", or a blank when it isn't a fixed term. */
+function termYears(term: Term): string {
+  return term.fixed ? years(term.years) : escapeMarkdown("[N years]");
 }
 
 function checkbox(checked: boolean): string {
@@ -101,64 +120,62 @@ export function stripTemplateHtml(markdown: string): string {
     .replace(/[ \t]*<label>.*?<\/label>[ \t]*/g, "");
 }
 
-/** Replaces exactly one occurrence, failing loudly if the template has drifted. */
-function replaceOnce(source: string, search: string, replacement: string): string {
-  const index = source.indexOf(search);
-  if (index === -1) {
-    throw new Error(`Mutual NDA template is missing expected text: ${search}`);
+/**
+ * Replaces the first occurrence of each search string in one pass. Every search
+ * runs against the original template, so user text inserted by one replacement
+ * can never be matched by another. Fails loudly if the template has drifted.
+ */
+function replaceInTemplate(template: string, replacements: [search: string, replacement: string][]): string {
+  const hits = replacements
+    .map(([search, replacement]) => {
+      const start = template.indexOf(search);
+      if (start === -1) throw new Error(`Mutual NDA template is missing expected text: ${search}`);
+      return { start, end: start + search.length, replacement };
+    })
+    .sort((a, b) => a.start - b.start);
+
+  let result = "";
+  let position = 0;
+  for (const { start, end, replacement } of hits) {
+    result += template.slice(position, start) + replacement;
+    position = end;
   }
-  return source.slice(0, index) + replacement + source.slice(index + search.length);
+  return result + template.slice(position);
 }
 
 /** Fills the Cover Page template with the user's values. */
 export function fillCoverPage(template: string, data: NdaFormData): string {
   const { mndaTerm, confidentialityTerm, party1, party2 } = data;
-  const row = (label: string, a: string, b: string) => `| ${label} | ${a} | ${b} |`;
   const partyRow = (label: string, field: keyof Party) =>
-    row(label, inline(party1[field], label), inline(party2[field], label));
+    `| ${label} | ${inline(party1[field], `[${label}]`)} | ${inline(party2[field], `[${label}]`)} |`;
 
-  const replacements: [string, string][] = [
+  const filled = replaceInTemplate(template, [
     [
       "[Evaluating whether to enter into a business relationship with the other party.]",
-      multiline(data.purpose, "Purpose"),
+      multiline(data.purpose, "[Purpose]"),
     ],
-    ["[Today’s date]", inline(formatDate(data.effectiveDate), "Effective Date")],
+    ["[Today’s date]", inline(formatDate(data.effectiveDate), "[Effective Date]")],
     [
       "- [x]     Expires [1 year(s)] from Effective Date.",
-      `${checkbox(mndaTerm.type === "expires")} Expires ${
-        mndaTerm.type === "expires" ? years(mndaTerm.years) : "\\[N years\\]"
-      } from Effective Date.`,
+      `${checkbox(mndaTerm.fixed)} Expires ${termYears(mndaTerm)} from Effective Date.`,
     ],
-    [
-      "- [ ]     Continues until terminated",
-      `${checkbox(mndaTerm.type === "continues")} Continues until terminated`,
-    ],
+    ["- [ ]     Continues until terminated", `${checkbox(!mndaTerm.fixed)} Continues until terminated`],
     [
       "- [x]     [1 year(s)] from Effective Date, but",
-      `${checkbox(confidentialityTerm.type === "years")} ${
-        confidentialityTerm.type === "years" ? years(confidentialityTerm.years) : "\\[N years\\]"
-      } from Effective Date, but`,
+      `${checkbox(confidentialityTerm.fixed)} ${termYears(confidentialityTerm)} from Effective Date, but`,
     ],
-    [
-      "- [ ]     In perpetuity.",
-      `${checkbox(confidentialityTerm.type === "perpetual")} In perpetuity.`,
-    ],
-    ["Governing Law: [Fill in state]", `Governing Law: ${inline(data.governingLaw, "Governing Law")}`],
+    ["- [ ]     In perpetuity.", `${checkbox(!confidentialityTerm.fixed)} In perpetuity.`],
+    ["Governing Law: [Fill in state]", `Governing Law: ${inline(data.governingLaw, "[Governing Law]")}`],
     [
       "Jurisdiction: [Fill in city or county and state, i.e. “courts located in New Castle, DE”]",
-      `Jurisdiction: ${inline(data.jurisdiction, "Jurisdiction")}`,
+      `Jurisdiction: ${inline(data.jurisdiction, "[Jurisdiction]")}`,
     ],
-    ["List any modifications to the MNDA", data.modifications.trim() ? multiline(data.modifications, "") : "None."],
+    ["List any modifications to the MNDA", multiline(data.modifications, "None.")],
     ["| Print Name | |", partyRow("Print Name", "name")],
     ["| Title | | |", partyRow("Title", "title")],
     ["| Company | | |", partyRow("Company", "company")],
     ["| Notice Address <label>Use either email or postal address</label> | | |", partyRow("Notice Address", "noticeAddress")],
-  ];
-
-  const filled = replacements.reduce(
-    (markdown, [search, replacement]) => replaceOnce(markdown, search, replacement),
-    template,
-  );
+  ]);
   return stripTemplateHtml(filled);
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import type { NdaFormData, Party } from "@/lib/nda";
+import { useId, type ReactNode } from "react";
+import type { NdaFormData, Party, Term } from "@/lib/nda";
 
 interface NdaFormProps {
   data: NdaFormData;
@@ -10,47 +10,91 @@ interface NdaFormProps {
 
 const controlClass =
   "rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900";
-const inputClass = `w-full ${controlClass}`;
+const hintClass = "text-xs text-zinc-600";
+const labelClass = "text-sm font-medium text-zinc-800";
 
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium text-zinc-800">{label}</span>
-      {hint && <span className="text-xs text-zinc-500">{hint}</span>}
-      {children}
-    </label>
-  );
-}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-4 border-t border-zinc-200 pt-5">
-      <legend className="pr-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">{title}</legend>
+      <legend className="pr-2 text-xs font-semibold uppercase tracking-wide text-zinc-600">{title}</legend>
       {children}
     </fieldset>
   );
 }
 
-function YearsInput({ value, disabled, onChange, label }: {
-  value: number;
-  disabled: boolean;
-  onChange: (years: number) => void;
+/** A labelled text input or textarea; the hint is exposed as the control's description. */
+function TextField({ label, hint, value, onChange, type = "text", multiline = false }: {
   label: string;
+  hint?: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: "text" | "date";
+  multiline?: boolean;
 }) {
+  const id = useId();
+  const hintId = hint ? `${id}-hint` : undefined;
+  const props = {
+    id,
+    value,
+    "aria-describedby": hintId,
+    className: `w-full ${controlClass}`,
+  };
   return (
-    <select
-      aria-label={label}
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(Number(e.target.value))}
-      className={`${controlClass} w-20 shrink-0 disabled:bg-zinc-100 disabled:text-zinc-400`}
-    >
-      {YEAR_OPTIONS.map((n) => (
-        <option key={n} value={n}>{n}</option>
-      ))}
-    </select>
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className={labelClass}>{label}</label>
+      {hint && <p id={hintId} className={hintClass}>{hint}</p>}
+      {multiline ? (
+        <textarea rows={3} {...props} onChange={(e) => onChange(e.target.value)} />
+      ) : (
+        <input type={type} {...props} onChange={(e) => onChange(e.target.value)} />
+      )}
+    </div>
+  );
+}
+
+/** A radio group choosing between a fixed number of years and an open-ended term. */
+function TermChoice({ name, legend, hint, term, fixedLabel, openLabel, yearsLabel, onChange }: {
+  name: string;
+  legend: string;
+  hint: string;
+  term: Term;
+  /** Text around the years dropdown, e.g. ["Expires after", "year(s)"]. */
+  fixedLabel: [before: string, after: string];
+  openLabel: string;
+  yearsLabel: string;
+  onChange: (term: Term) => void;
+}) {
+  const hintId = `${useId()}-hint`;
+  const optionClass = "flex items-center gap-2 text-sm text-zinc-800";
+  return (
+    <fieldset className="flex flex-col gap-2" aria-describedby={hintId}>
+      <legend className={labelClass}>{legend}</legend>
+      <p id={hintId} className={`${hintClass} -mt-1`}>{hint}</p>
+      <div className={optionClass}>
+        <label className="flex items-center gap-2">
+          <input type="radio" name={name} checked={term.fixed} onChange={() => onChange({ ...term, fixed: true })} />
+          {fixedLabel[0]}
+        </label>
+        <select
+          aria-label={yearsLabel}
+          value={term.years}
+          disabled={!term.fixed}
+          onChange={(e) => onChange({ fixed: true, years: Number(e.target.value) })}
+          className={`${controlClass} w-20 shrink-0 disabled:bg-zinc-100 disabled:text-zinc-500`}
+        >
+          {YEAR_OPTIONS.map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+        <span aria-hidden="true">{fixedLabel[1]}</span>
+      </div>
+      <label className={optionClass}>
+        <input type="radio" name={name} checked={!term.fixed} onChange={() => onChange({ ...term, fixed: false })} />
+        {openLabel}
+      </label>
+    </fieldset>
   );
 }
 
@@ -59,140 +103,67 @@ function PartyFields({ title, party, onChange }: {
   party: Party;
   onChange: (party: Party) => void;
 }) {
-  const set = (field: keyof Party) => (e: { target: { value: string } }) =>
-    onChange({ ...party, [field]: e.target.value });
+  const field = (key: keyof Party) => ({
+    value: party[key],
+    onChange: (value: string) => onChange({ ...party, [key]: value }),
+  });
   return (
     <Section title={title}>
-      <Field label="Company">
-        <input className={inputClass} value={party.company} onChange={set("company")} />
-      </Field>
+      <TextField label="Company" {...field("company")} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Signer name">
-          <input className={inputClass} value={party.name} onChange={set("name")} />
-        </Field>
-        <Field label="Title">
-          <input className={inputClass} value={party.title} onChange={set("title")} />
-        </Field>
+        <TextField label="Signer name" {...field("name")} />
+        <TextField label="Title" {...field("title")} />
       </div>
-      <Field label="Notice address" hint="Email or postal address for legal notices">
-        <input className={inputClass} value={party.noticeAddress} onChange={set("noticeAddress")} />
-      </Field>
+      <TextField label="Notice address" hint="Email or postal address for legal notices" {...field("noticeAddress")} />
     </Section>
   );
 }
 
 export function NdaForm({ data, onChange }: NdaFormProps) {
-  const update = (patch: Partial<NdaFormData>) => onChange({ ...data, ...patch });
-  const mndaYears = data.mndaTerm.type === "expires" ? data.mndaTerm.years : 1;
-  const confidentialityYears = data.confidentialityTerm.type === "years" ? data.confidentialityTerm.years : 1;
+  const field = <K extends keyof NdaFormData>(key: K) => ({
+    value: data[key],
+    onChange: (value: NdaFormData[K]) => onChange({ ...data, [key]: value }),
+  });
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
+    <form className="flex flex-col gap-6" aria-label="Agreement details" onSubmit={(e) => e.preventDefault()}>
       <Section title="Agreement">
-        <Field label="Purpose" hint="How Confidential Information may be used">
-          <textarea
-            rows={3}
-            className={inputClass}
-            value={data.purpose}
-            onChange={(e) => update({ purpose: e.target.value })}
-          />
-        </Field>
-        <Field label="Effective date">
-          <input
-            type="date"
-            className={inputClass}
-            value={data.effectiveDate}
-            onChange={(e) => update({ effectiveDate: e.target.value })}
-          />
-        </Field>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-zinc-800">MNDA term</span>
-          <span className="text-xs text-zinc-500">The length of this MNDA</span>
-          <label className="flex items-center gap-2 text-sm text-zinc-800">
-            <input
-              type="radio"
-              name="mndaTerm"
-              checked={data.mndaTerm.type === "expires"}
-              onChange={() => update({ mndaTerm: { type: "expires", years: mndaYears } })}
-            />
-            Expires after
-            <YearsInput
-              label="MNDA term in years"
-              value={mndaYears}
-              disabled={data.mndaTerm.type !== "expires"}
-              onChange={(years) => update({ mndaTerm: { type: "expires", years } })}
-            />
-            year(s)
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-800">
-            <input
-              type="radio"
-              name="mndaTerm"
-              checked={data.mndaTerm.type === "continues"}
-              onChange={() => update({ mndaTerm: { type: "continues" } })}
-            />
-            Continues until terminated
-          </label>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-zinc-800">Term of confidentiality</span>
-          <span className="text-xs text-zinc-500">How long Confidential Information is protected</span>
-          <label className="flex items-center gap-2 text-sm text-zinc-800">
-            <input
-              type="radio"
-              name="confidentialityTerm"
-              checked={data.confidentialityTerm.type === "years"}
-              onChange={() => update({ confidentialityTerm: { type: "years", years: confidentialityYears } })}
-            />
-            <YearsInput
-              label="Term of confidentiality in years"
-              value={confidentialityYears}
-              disabled={data.confidentialityTerm.type !== "years"}
-              onChange={(years) => update({ confidentialityTerm: { type: "years", years } })}
-            />
-            year(s) from the effective date
-          </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-800">
-            <input
-              type="radio"
-              name="confidentialityTerm"
-              checked={data.confidentialityTerm.type === "perpetual"}
-              onChange={() => update({ confidentialityTerm: { type: "perpetual" } })}
-            />
-            In perpetuity
-          </label>
-        </div>
+        <TextField label="Purpose" hint="How Confidential Information may be used" multiline {...field("purpose")} />
+        <TextField label="Effective date" hint="Leave blank to use today's date" type="date" {...field("effectiveDate")} />
+        <TermChoice
+          name="mndaTerm"
+          legend="MNDA term"
+          hint="The length of this MNDA"
+          term={data.mndaTerm}
+          fixedLabel={["Expires after", "year(s)"]}
+          openLabel="Continues until terminated"
+          yearsLabel="MNDA term in years"
+          onChange={field("mndaTerm").onChange}
+        />
+        <TermChoice
+          name="confidentialityTerm"
+          legend="Term of confidentiality"
+          hint="How long Confidential Information is protected"
+          term={data.confidentialityTerm}
+          fixedLabel={["Protected for", "year(s) from the effective date"]}
+          openLabel="In perpetuity"
+          yearsLabel="Term of confidentiality in years"
+          onChange={field("confidentialityTerm").onChange}
+        />
       </Section>
 
       <Section title="Governing law & jurisdiction">
-        <Field label="Governing law" hint="State whose laws govern the MNDA, e.g. Delaware">
-          <input
-            className={inputClass}
-            value={data.governingLaw}
-            onChange={(e) => update({ governingLaw: e.target.value })}
-          />
-        </Field>
-        <Field label="Jurisdiction" hint="City or county and state, e.g. courts located in New Castle, DE">
-          <input
-            className={inputClass}
-            value={data.jurisdiction}
-            onChange={(e) => update({ jurisdiction: e.target.value })}
-          />
-        </Field>
-        <Field label="Modifications" hint="Optional changes to the Standard Terms">
-          <textarea
-            rows={3}
-            className={inputClass}
-            value={data.modifications}
-            onChange={(e) => update({ modifications: e.target.value })}
-          />
-        </Field>
+        <TextField label="Governing law" hint="State whose laws govern the MNDA, e.g. Delaware" {...field("governingLaw")} />
+        <TextField
+          label="Jurisdiction"
+          hint="City or county and state, e.g. courts located in New Castle, DE"
+          {...field("jurisdiction")}
+        />
+        <TextField label="Modifications" hint="Optional changes to the Standard Terms" multiline {...field("modifications")} />
       </Section>
 
-      <PartyFields title="Party 1" party={data.party1} onChange={(party1) => update({ party1 })} />
-      <PartyFields title="Party 2" party={data.party2} onChange={(party2) => update({ party2 })} />
+      <PartyFields title="Party 1" party={data.party1} onChange={field("party1").onChange} />
+      <PartyFields title="Party 2" party={data.party2} onChange={field("party2").onChange} />
     </form>
   );
 }

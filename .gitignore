@@ -75,10 +75,10 @@ next-env.d.ts
 
 # Frontend testing
 coverage/
-/playwright-report/
-/test-results/
-/blob-report/
-/playwright/.cache/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
 
 # Logs
 logs/

@@ -106,6 +106,8 @@ function renderBlock(node: Nodes, key: number): ReactNode {
     case "table":
       return renderTable(node, key);
     default:
+      // The NDA templates use only the block types above, and user input is fully
+      // escaped, so it can't introduce others (code blocks, quotes, images, ...).
       return null;
   }
 }

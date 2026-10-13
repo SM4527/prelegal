@@ -30,10 +30,10 @@ body {
   font-size: 0.95rem;
   line-height: 1.65;
 }
-.nda-document h1 { font-size: 1.6rem; font-weight: 700; margin: 2.5rem 0 1rem; }
-.nda-document h1:first-child { margin-top: 0; }
-.nda-document h2 { font-size: 1.1rem; font-weight: 700; margin: 1.75rem 0 0.75rem; letter-spacing: 0.02em; }
-.nda-document h3 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.4rem; }
+.nda-document h2 { font-size: 1.6rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+.nda-document h2:first-child { margin-top: 0; }
+.nda-document h3 { font-size: 1.1rem; font-weight: 700; margin: 1.75rem 0 0.75rem; letter-spacing: 0.02em; }
+.nda-document h4 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.4rem; }
 .nda-document p { margin: 0 0 0.75rem; }
 .nda-document a { color: #1d4ed8; text-decoration: underline; }
 .nda-document ol { list-style: decimal; padding-left: 1.5rem; }
