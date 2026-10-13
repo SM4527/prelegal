@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f4f5;
+  --foreground: #18181b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Paper-style rendering of the NDA preview (markdown output from react-markdown). */
+.nda-document {
+  background: #fff;
+  color: #18181b;
+  border: 1px solid #e4e4e7;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+  padding: 3rem clamp(1.25rem, 5vw, 4rem);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+.nda-document h2 { font-size: 1.6rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+.nda-document h2:first-child { margin-top: 0; }
+.nda-document h3 { font-size: 1.1rem; font-weight: 700; margin: 1.75rem 0 0.75rem; letter-spacing: 0.02em; }
+.nda-document h4 { font-size: 1rem; font-weight: 700; margin: 1.5rem 0 0.4rem; }
+.nda-document p { margin: 0 0 0.75rem; }
+.nda-document a { color: #1d4ed8; text-decoration: underline; }
+.nda-document ol { list-style: decimal; padding-left: 1.5rem; }
+.nda-document ul { list-style: none; padding-left: 0; }
+.nda-document li { margin-bottom: 0.6rem; }
+.nda-document li input[type="checkbox"] { margin-right: 0.5rem; vertical-align: middle; }
+.nda-document table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.9rem; }
+.nda-document th,
+.nda-document td { border: 1px solid #d4d4d8; padding: 0.6rem 0.75rem; height: 2.5rem; overflow-wrap: anywhere; }
+.nda-document th { background: #fafafa; }
