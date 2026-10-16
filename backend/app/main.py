@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from litellm import RateLimitError
+from openai import APIError
 
 from app.db import init_db
 from app.llm import LlmOutputError
@@ -26,6 +27,13 @@ app = FastAPI(title="Prelegal", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(chat.router)
+
+
+@app.exception_handler(APIError)
+async def assistant_unavailable(request: Request, exc: APIError) -> JSONResponse:
+    """Any LLM provider failure (timeout, outage, bad key) left after the fallback."""
+    detail = "The assistant is unavailable right now, please try again."
+    return JSONResponse({"detail": detail}, status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 @app.exception_handler(RateLimitError)

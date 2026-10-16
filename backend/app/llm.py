@@ -27,8 +27,9 @@ _router = Router(
         },
     ],
     fallbacks=[{"primary": ["fallback"]}],
-    num_retries=2,
-    timeout=60,
+    # The fallback is the retry, so a slow or failing Groq call doesn't keep the user waiting.
+    num_retries=0,
+    timeout=30,
 )
 
 

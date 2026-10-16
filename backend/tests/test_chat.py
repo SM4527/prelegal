@@ -1,7 +1,7 @@
 from datetime import date
 
 import pytest
-from litellm import RateLimitError
+from litellm import APIConnectionError, AuthenticationError, RateLimitError, Timeout
 
 from app.nda import Party, Term
 from conftest import llm_response, turn_json
@@ -135,3 +135,23 @@ def test_conversations_do_not_survive_a_restart(client, fake_llm):
     client.__exit__(None, None, None)
     client.__enter__()
     assert client.get(f"/api/conversations/{conversation_id}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        AuthenticationError("bad key", "groq", "openai/gpt-oss-120b"),
+        Timeout("slow", "openai/gpt-oss-120b", "groq"),
+        APIConnectionError("down", "groq", "openai/gpt-oss-120b"),
+    ],
+    ids=["auth", "timeout", "connection"],
+)
+def test_other_llm_failures_are_503_and_store_nothing(client, fake_llm, error):
+    conversation_id = start(client)["id"]
+    fake_llm.side_effect = error
+
+    response = send(client, conversation_id, "Hello")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "The assistant is unavailable right now, please try again."}
+    assert len(client.get(f"/api/conversations/{conversation_id}").json()["messages"]) == 1

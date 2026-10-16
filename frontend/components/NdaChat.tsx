@@ -59,7 +59,7 @@ export function NdaChat({ messages, pending, status, error, onSend, onRetry, onS
       {error && (
         <div role="alert" className="flex items-center justify-between gap-2 text-sm text-red-700">
           <span>{error}</span>
-          <button type="button" onClick={onRetry} className="font-medium underline">
+          <button type="button" onClick={onRetry} disabled={busy} className="font-medium underline disabled:opacity-50">
             Retry
           </button>
         </div>
