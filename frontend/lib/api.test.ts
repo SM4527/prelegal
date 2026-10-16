@@ -3,8 +3,9 @@ import { ApiError, auth } from "./api";
 
 const credentials = { email: "a@example.com", password: "secret" };
 
-function mockFetch(status: number, body: unknown) {
-  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
+function mockFetch(status: number, body: unknown, statusText = "") {
+  const text = typeof body === "string" ? body : JSON.stringify(body);
+  const fetchMock = vi.fn().mockResolvedValue(new Response(text, { status, statusText }));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -48,5 +49,18 @@ describe("auth API client", () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 501, message: "Accounts are not available yet." });
+  });
+
+  it.each([
+    ["a validation error list", 422, { detail: [{ msg: "Field required" }] }, "Unprocessable Entity", "Unprocessable Entity"],
+    ["a non-JSON error page", 502, "<html>Bad Gateway</html>", "Bad Gateway", "Bad Gateway"],
+    ["an empty error body without status text", 500, "", "", "Request failed (500)"],
+  ])("falls back to the status text for %s", async (_, status, body, statusText, message) => {
+    mockFetch(status, body, statusText);
+
+    const error = await auth.signin(credentials).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status, message });
   });
 });

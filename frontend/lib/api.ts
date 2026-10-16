@@ -24,9 +24,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "Content-Type": "application/json" },
   });
-  const body = await res.json();
-  if (!res.ok) throw new ApiError(res.status, body.detail);
-  return body;
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return res.json();
+}
+
+/** FastAPI's string `detail`, else the status text (for 422 detail lists or non-JSON error pages). */
+async function errorMessage(res: Response): Promise<string> {
+  const detail = await res.json().then((body) => body?.detail, () => undefined);
+  return typeof detail === "string" ? detail : res.statusText || `Request failed (${res.status})`;
 }
 
 const post = <T>(path: string, data?: unknown) =>
