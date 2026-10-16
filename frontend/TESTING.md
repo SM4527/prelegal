@@ -7,7 +7,7 @@ Run every command from the `frontend/` directory.
 | Command | What it runs | Approx. time |
 | --- | --- | --- |
 | `npm test` | Unit and component tests (Vitest) | ~5 s |
-| `npm run test:e2e` | Browser end-to-end tests (Playwright). Builds the app and serves it on port 3100 | ~1 min |
+| `npm run test:e2e` | Browser end-to-end tests (Playwright). Builds the static site and serves it through the FastAPI backend on port 3100 (needs `uv`) | ~1 min |
 | `npm run lint` | ESLint | ~5 s |
 | `npm run typecheck` | Generates route types, then runs `tsc --noEmit` | ~10 s |
 
@@ -68,6 +68,17 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Keyboard-only use works: typing, Tab, arrow keys between radios, and Enter on Download (focus stays on the button).
 - HTML and markdown in the input are shown as text, with no `<img>`, emphasis or `javascript:` links in the preview.
 - No horizontal scrolling at desktop or phone width.
+
+**`lib/api.test.ts` and `components/AuthForm.test.tsx`: placeholder auth (unit and component tests)**
+- The API client calls the right `/api/auth/*` route and method, and turns error responses into an `ApiError` with FastAPI's `detail`.
+- The sign-in and sign-up forms submit the credentials, show the backend's error message or a generic one, and link to each other.
+
+**`e2e/auth.spec.ts`: sign-in and sign-up pages against the real backend (Playwright)**
+- Each page submits to its route, which responds 501, and shows the message.
+- `/signin` redirects to `/signin/`, and the pages link to each other.
+- The backend health check responds.
+
+Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the placeholder auth routes and the static file serving.
 
 ## Manual test plan
 
