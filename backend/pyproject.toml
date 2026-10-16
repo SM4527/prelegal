@@ -5,6 +5,8 @@ description = "FastAPI backend for Prelegal"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.143.3",
+    "litellm>=1.105.1",
+    "python-dotenv>=1.2.4",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -12,8 +14,12 @@ dependencies = [
 dev = [
     "httpx2>=2.13.1",
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+asyncio_mode = "auto"
+addopts = "-m 'not integration'"
+markers = ["integration: makes live LLM calls; run with `uv run pytest -m integration`"]

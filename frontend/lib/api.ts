@@ -1,3 +1,5 @@
+import type { NdaFormData } from "./nda";
+
 export interface Credentials {
   email: string;
   password: string;
@@ -6,6 +8,17 @@ export interface Credentials {
 export interface User {
   id: number;
   email: string;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface Conversation {
+  id: string;
+  messages: ChatMessage[];
+  fields: NdaFormData;
 }
 
 /** A non-2xx response from the backend, carrying FastAPI's `detail` message. */
@@ -42,4 +55,10 @@ export const auth = {
   signin: (credentials: Credentials) => post<User>("/auth/signin", credentials),
   signout: () => post<void>("/auth/signout"),
   me: () => apiFetch<User>("/auth/me"),
+};
+
+export const chat = {
+  create: () => post<Conversation>("/conversations"),
+  get: (id: string) => apiFetch<Conversation>(`/conversations/${id}`),
+  send: (id: string, content: string) => post<Conversation>(`/conversations/${id}/messages`, { content }),
 };

@@ -12,7 +12,7 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-Current state: only the Mutual NDA document is supported, with no AI chat yet. See "Implementation status" below.
+Current state: only the Mutual NDA document is supported, filled in through AI chat. See "Implementation status" below.
 
 ## Development process
 
@@ -70,4 +70,8 @@ These are Tailwind theme colors in `frontend/app/globals.css`: `brand-yellow`, `
   - Auth is a placeholder: `/api/auth/{signup,signin,signout,me}` return 501; `/signin/` and `/signup/` pages call them via `frontend/lib/api.ts`.
   - Docker: multi-stage `Dockerfile`, `docker-compose.yml` (port 8000, `.env` optional); scripts wrap `docker compose up -d --build` / `down`.
   - Tests: `uv run pytest` (backend), `npm test` (Vitest), `npm run test:e2e` (Playwright against FastAPI serving the build on port 3100).
-- **Next**: real auth in `routers/auth.py`, AI chat via `backend/app/llm.py`, more document types.
+- **PL-5**: AI chat replaces the NDA form.
+  - Backend: `llm.py` (LiteLLM Router, Groq then OpenRouter fallback; one structured call per turn, no streaming, no re-ask), `nda.py` (camelCase Pydantic models matching `NdaFormData`, `Literal` years 1-10, system prompt), `conversations.py` (SQLite `conversations` and `messages`), `routers/chat.py` (`POST /api/conversations` with AI greeting, `GET /{id}`, `POST /{id}/messages`). A turn is stored only after the LLM call succeeds. Rate limit -> 503, invalid output -> 502.
+  - Frontend: `lib/useConversation.ts` (id in `localStorage`, resume, retry, start over), `components/NdaChat.tsx`, `ChatInput.tsx`. `NdaForm` was removed.
+  - Tests mock the LLM (`app.llm._router.acompletion`; Playwright stubs `/api/conversations`). `uv run pytest -m integration` makes one live call.
+- **Next**: real auth in `routers/auth.py`, more document types.

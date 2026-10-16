@@ -5,7 +5,7 @@ import { loadNdaTemplates } from "@/lib/templates";
 export const metadata: Metadata = {
   // The layout's title template only applies to child routes, not this one.
   title: { absolute: "Mutual NDA Creator | Prelegal" },
-  description: "Fill in a Mutual Non-Disclosure Agreement and download it as a PDF.",
+  description: "Draft a Mutual Non-Disclosure Agreement by chatting with an AI assistant, then download it as a PDF.",
 };
 
 // Read once at module scope: the templates don't change per request, so the page prerenders.
@@ -18,8 +18,8 @@ export default function Home() {
         <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600">Prelegal</p>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Mutual NDA Creator</h1>
         <p className="max-w-2xl text-sm text-zinc-600">
-          Fill in the key terms and the agreement updates as you type. Download the completed Mutual
-          Non-Disclosure Agreement as a PDF when you&apos;re ready to sign.
+          Chat with the assistant about your agreement and the document fills itself in as you answer.
+          Download the completed Mutual Non-Disclosure Agreement as a PDF when you&apos;re ready to sign.
         </p>
       </header>
       <NdaCreator templates={templates} />
