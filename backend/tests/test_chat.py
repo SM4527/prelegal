@@ -5,7 +5,7 @@ from litellm import APIConnectionError, AuthenticationError, RateLimitError, Tim
 
 from app.documents import turn_model
 from app.nda import Party, Term
-from conftest import llm_response, turn_json
+from conftest import llm_response, sign_up, turn_json
 
 DEFAULT_PURPOSE = "Evaluating whether to enter into a business relationship with the other party."
 ACME = Party(name="Jane Doe", title="CEO", company="Acme Inc", notice_address="jane@acme.com")
@@ -239,3 +239,59 @@ def test_conversations_do_not_survive_a_restart(client, fake_llm):
     client.__exit__(None, None, None)
     client.__enter__()
     assert client.get(f"/api/conversations/{conversation_id}").status_code == 404
+
+
+def test_signed_out_conversations_open_for_anyone_with_the_id(client, fake_llm):
+    conversation_id = start(client)["id"]
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 200
+
+
+def test_a_users_conversation_is_hidden_from_others(client, fake_llm):
+    sign_up(client, "a@example.com")
+    conversation_id = drafting(client, fake_llm, "csa")
+
+    client.post("/api/auth/signout")
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 404
+    sign_up(client, "b@example.com")
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 404
+    assert send(client, conversation_id, "Hi").status_code == 404
+
+
+def test_signing_in_saves_the_draft_to_the_account(client, fake_llm):
+    conversation_id = drafting(client, fake_llm, "csa")
+    sign_up(client, "a@example.com")
+
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 200
+    assert [c["id"] for c in client.get("/api/conversations").json()] == [conversation_id]
+    client.post("/api/auth/signout")
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 404
+
+
+def test_listing_requires_sign_in(client):
+    assert client.get("/api/conversations").status_code == 401
+
+
+def test_list_shows_own_documents_newest_first(client, fake_llm):
+    sign_up(client, "b@example.com")
+    drafting(client, fake_llm, "pilot")
+    client.post("/api/auth/signout")
+    sign_up(client, "a@example.com")
+    start(client)  # no document chosen yet: not listed
+    nda_id = drafting(client, fake_llm, "mutual-nda")
+    csa_id = drafting(client, fake_llm, "csa")
+    fake_llm.return_value = llm_response(turn_json("Noted.", current="mutual-nda", party1=ACME, party2=GLOBEX))
+    send(client, nda_id, "Acme and Globex")
+
+    listed = client.get("/api/conversations").json()
+
+    assert [c["id"] for c in listed] == [nda_id, csa_id]
+    assert listed[0]["documentName"] == "Mutual Non-Disclosure Agreement"
+    assert listed[0]["parties"] == ["Acme Inc", "Globex LLC"]
+    assert listed[1] == {
+        "id": csa_id,
+        "document": "csa",
+        "documentName": "Cloud Service Agreement",
+        "parties": [],
+        "updatedAt": listed[1]["updatedAt"],
+    }
+    assert listed[0]["updatedAt"].endswith("Z")

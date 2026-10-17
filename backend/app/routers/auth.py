@@ -1,39 +1,58 @@
-"""Auth API. Placeholder: every route responds 501 until real auth is built."""
+"""Auth API: sign up, sign in and out with an HttpOnly session cookie, and who is signed in."""
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from typing import Annotated
+
+from fastapi import APIRouter, Cookie, HTTPException, Response, status
+from pydantic import BaseModel, Field
+
+from app import auth
+from app.auth import SESSION_COOKIE, CurrentUser, User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 class Credentials(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=128)
 
 
-def not_implemented() -> HTTPException:
-    return HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "Accounts are not available yet.")
+class NewAccount(Credentials):
+    password: str = Field(min_length=8, max_length=128)
 
 
-@router.post("/signup")
-def signup(credentials: Credentials):
-    """Create a user account."""
-    raise not_implemented()
+def _start_session(response: Response, user: User) -> User:
+    token = auth.create_session(user.id)
+    response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax", path="/")
+    return user
+
+
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+def signup(account: NewAccount, response: Response) -> User:
+    """Create an account and sign in to it."""
+    user = auth.create_user(account.email, account.password)
+    if user is None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with that email already exists.")
+    return _start_session(response, user)
 
 
 @router.post("/signin")
-def signin(credentials: Credentials):
+def signin(credentials: Credentials, response: Response) -> User:
     """Sign in with email and password."""
-    raise not_implemented()
+    user = auth.authenticate(credentials.email, credentials.password)
+    if user is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password.")
+    return _start_session(response, user)
 
 
-@router.post("/signout")
-def signout():
-    """Sign out the current user."""
-    raise not_implemented()
+@router.post("/signout", status_code=status.HTTP_204_NO_CONTENT)
+def signout(response: Response, session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None) -> None:
+    """End the session, if any, and clear its cookie."""
+    if session:
+        auth.delete_session(session)
+    response.delete_cookie(SESSION_COOKIE, path="/")
 
 
 @router.get("/me")
-def me():
+def me(user: CurrentUser) -> User:
     """Return the signed-in user."""
-    raise not_implemented()
+    return user
