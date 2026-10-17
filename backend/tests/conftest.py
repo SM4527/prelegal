@@ -18,7 +18,7 @@ os.environ["STATIC_DIR"] = str(STATIC_DIR)
 os.environ["DB_PATH"] = str(_tmp / "data" / "test.db")
 
 from app.main import app  # noqa: E402
-from app.nda import NdaTurn, default_fields  # noqa: E402
+from app.documents import default_fields, turn_model  # noqa: E402
 
 
 @pytest.fixture
@@ -33,10 +33,13 @@ def llm_response(content: str) -> SimpleNamespace:
     return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
 
 
-def turn_json(reply: str, **fields) -> str:
-    """An NdaTurn as the model would return it: the default fields with `fields` overridden."""
-    nda = default_fields().model_copy(update=fields)
-    return NdaTurn(fields=nda, reply=reply).model_dump_json(by_alias=True)
+def turn_json(reply: str, current: str | None = None, switch_to: str | None = None, **fields) -> str:
+    """A turn as the model would return it while drafting `current` (None: no document yet).
+
+    The fields are `current`'s defaults with `fields` overridden; `switch_to` chooses or changes the document.
+    """
+    data = default_fields(current).model_copy(update=fields)
+    return turn_model(current)(document=switch_to or current, fields=data, reply=reply).model_dump_json(by_alias=True)
 
 
 @pytest.fixture

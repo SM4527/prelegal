@@ -1,11 +1,14 @@
-"""Storage for chat conversations: the NDA fields so far and the message history."""
+"""Storage for chat conversations: the chosen document, its fields so far, and the message history."""
 
+import json
 from contextlib import closing
-from typing import Literal
+from typing import Any, Literal
 from uuid import uuid4
 
+from pydantic import BaseModel
+
 from app.db import connect
-from app.nda import CamelModel, NdaFields
+from app.nda import CamelModel
 
 
 class Message(CamelModel):
@@ -16,16 +19,21 @@ class Message(CamelModel):
 class Conversation(CamelModel):
     id: str
     messages: list[Message]
-    fields: NdaFields
+    document: str | None
+    fields: dict[str, Any]
 
 
-def create(fields: NdaFields, greeting: str) -> Conversation:
-    """Store a new conversation that opens with the assistant's greeting."""
-    conversation = Conversation(id=uuid4().hex, messages=[Message(role="assistant", content=greeting)], fields=fields)
+def create(fields: BaseModel, greeting: str) -> Conversation:
+    """Store a new conversation, with no document chosen yet, that opens with the assistant's greeting."""
+    conversation = Conversation(
+        id=uuid4().hex,
+        messages=[Message(role="assistant", content=greeting)],
+        document=None,
+        fields=fields.model_dump(by_alias=True),
+    )
     with closing(connect()) as conn, conn:
         conn.execute(
-            "INSERT INTO conversations (id, fields) VALUES (?, ?)",
-            (conversation.id, fields.model_dump_json(by_alias=True)),
+            "INSERT INTO conversations (id, fields) VALUES (?, ?)", (conversation.id, json.dumps(conversation.fields))
         )
         _add_message(conn, conversation.id, conversation.messages[0])
     return conversation
@@ -33,7 +41,9 @@ def create(fields: NdaFields, greeting: str) -> Conversation:
 
 def get(conversation_id: str) -> Conversation | None:
     with closing(connect()) as conn:
-        row = conn.execute("SELECT fields FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+        row = conn.execute(
+            "SELECT document, fields FROM conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
         if row is None:
             return None
         messages = conn.execute(
@@ -42,21 +52,30 @@ def get(conversation_id: str) -> Conversation | None:
     return Conversation(
         id=conversation_id,
         messages=[Message(**message) for message in messages],
-        fields=NdaFields.model_validate_json(row["fields"]),
+        document=row["document"],
+        fields=json.loads(row["fields"]),
     )
 
 
-def add_turn(conversation: Conversation, user_text: str, reply: str, fields: NdaFields) -> Conversation:
-    """Store a user message, the assistant's reply and the updated fields in one transaction."""
+def add_turn(
+    conversation: Conversation, user_text: str, reply: str, document: str | None, fields: BaseModel
+) -> Conversation:
+    """Store a user message, the assistant's reply, the document and its fields in one transaction."""
     new_messages = [Message(role="user", content=user_text), Message(role="assistant", content=reply)]
+    updated = Conversation(
+        id=conversation.id,
+        messages=[*conversation.messages, *new_messages],
+        document=document,
+        fields=fields.model_dump(by_alias=True),
+    )
     with closing(connect()) as conn, conn:
         for message in new_messages:
             _add_message(conn, conversation.id, message)
         conn.execute(
-            "UPDATE conversations SET fields = ? WHERE id = ?",
-            (fields.model_dump_json(by_alias=True), conversation.id),
+            "UPDATE conversations SET document = ?, fields = ? WHERE id = ?",
+            (document, json.dumps(updated.fields), conversation.id),
         )
-    return Conversation(id=conversation.id, messages=[*conversation.messages, *new_messages], fields=fields)
+    return updated
 
 
 def _add_message(conn, conversation_id: str, message: Message) -> None:

@@ -82,7 +82,7 @@ export function escapeMarkdown(text: string): string {
 }
 
 /** Escapes a single-line value (newlines become spaces), or the fallback when empty. */
-function inline(value: string, fallback: string): string {
+export function inline(value: string, fallback: string): string {
   const text = value.trim().replace(/\s*\n\s*/g, " ");
   return escapeMarkdown(text || fallback);
 }

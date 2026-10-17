@@ -6,8 +6,8 @@ import remarkParse from "remark-parse";
 import { unified } from "unified";
 
 /**
- * Renders the NDA markdown as a PDF document. The markdown is parsed into an
- * mdast tree and each node type the NDA uses is mapped to react-pdf primitives.
+ * Renders a document's markdown as a PDF. The markdown is parsed into an
+ * mdast tree and each node type the templates use is mapped to react-pdf primitives.
  * This module pulls in @react-pdf/renderer, so it is only loaded on download.
  */
 
@@ -105,17 +105,20 @@ function renderBlock(node: Nodes, key: number): ReactNode {
       return renderList(node, key);
     case "table":
       return renderTable(node, key);
+    case "code":
+      // Deeply indented template text (the DPA's lettered clauses) parses as a code block; it is legal text.
+      return <Text key={key} style={styles.paragraph}>{node.value}</Text>;
     default:
-      // The NDA templates use only the block types above, and user input is fully
-      // escaped, so it can't introduce others (code blocks, quotes, images, ...).
+      // The templates use only the block types above, and user input is fully
+      // escaped, so it can't introduce others (quotes, images, ...).
       return null;
   }
 }
 
-export function NdaPdfDocument({ markdown }: { markdown: string }) {
+export function DocumentPdf({ markdown, title }: { markdown: string; title: string }) {
   const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown) as Root;
   return (
-    <Document title="Mutual Non-Disclosure Agreement" creator="Prelegal">
+    <Document title={title} creator="Prelegal">
       <Page size="LETTER" style={styles.page}>
         {tree.children.map(renderBlock)}
       </Page>

@@ -25,7 +25,7 @@ async function resumeOrCreate(): Promise<Conversation> {
 }
 
 /**
- * The chat with the NDA assistant: the conversation, what is in flight, and the
+ * The chat with the assistant: the conversation, what is in flight, and the
  * actions the chat panel offers. A failed message can be retried as-is.
  */
 export function useConversation() {
@@ -67,6 +67,7 @@ export function useConversation() {
 
   return {
     messages: conversation?.messages ?? [],
+    document: conversation?.document ?? null,
     fields: conversation?.fields,
     status,
     pending,

@@ -1,11 +1,13 @@
 ---
 name: openrouter-llm
-description: How to write backend code that calls LLMs through LiteLLM using OpenRouter's free models only (IDs ending in :free, no credit card), defaulting to openai/gpt-oss-120b:free with Structured Outputs parsed into Pydantic models. Use whenever writing or changing code in this project that calls an LLM through OpenRouter.
+description: How to write backend code that calls LLMs through LiteLLM using OpenRouter's free models only (IDs ending in :free, no credit card), defaulting to nvidia/nemotron-3-super-120b-a12b:free with Structured Outputs parsed into Pydantic models. Use whenever writing or changing code in this project that calls an LLM through OpenRouter.
 ---
 
 # LLM calls via LiteLLM → OpenRouter (free models only)
 
-- Model: `openrouter/openai/gpt-oss-120b:free` (LiteLLM model string)
+- Model: `openrouter/nvidia/nemotron-3-super-120b-a12b:free` (LiteLLM model string). OpenRouter dropped the free
+  `openai/gpt-oss-120b:free` in October 2026 (no providers left); it is slower than
+  Groq (about 15-30 s per structured call), so give it a 60 s timeout.
 - Key: `OPENROUTER_API_KEY` in `.env` at the project root. Never hard-code or
   log it.
 - Cost: $0. **Only model IDs ending in `:free` are free.** Never use the plain
@@ -38,7 +40,7 @@ load_dotenv()
 
 T = TypeVar("T", bound=BaseModel)
 
-MODEL = "openrouter/openai/gpt-oss-120b:free"
+MODEL = "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
 
 
 async def complete_structured(messages: list[dict], schema: type[T]) -> T:
@@ -95,7 +97,7 @@ OpenRouter fallbacks (OpenRouter tries them in order):
 
 ```python
 extra_body={
-    "models": ["openai/gpt-oss-120b:free", "<another-model>:free"],
+    "models": ["nvidia/nemotron-3-super-120b-a12b:free", "<another-model>:free"],
     "provider": {"require_parameters": True},
 }
 ```

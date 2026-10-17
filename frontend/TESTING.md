@@ -1,4 +1,4 @@
-# Testing the Mutual NDA Creator
+# Testing the Legal Agreement Creator
 
 Run every command from the `frontend/` directory.
 
@@ -28,9 +28,16 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Formats dates without timezone shifts.
 - Includes all 11 Standard Terms sections.
 
-**`components/NdaCreator.test.tsx`: the chat and live preview (component tests in jsdom, chat API mocked)**
+**`lib/documents.test.ts`: every supported document (unit tests)**
+- Loads all 11 documents from `documents.json` and `catalog.json`, with Windows line endings normalised.
+- Each generated Cover Page has the key terms (placeholders when blank), the document's party labels, and the Standard Terms without template markup.
+- Values are escaped; the Mutual NDA still uses its official Cover Page.
+
+**`components/DocumentCreator.test.tsx`: the chat and live preview (component tests in jsdom, chat API mocked)**
+- No preview or download until a document is chosen; choosing one shows its Cover Page.
+- Focus returns to the message box when the greeting arrives, after clicking Send, after a reply and after an error.
 - Starts a conversation with the assistant's greeting and remembers its id; resumes it after a reload, or starts afresh if the backend no longer knows it.
-- Default document, with today's date while no date is chosen.
+- The Mutual NDA preview uses today's date while no date is chosen.
 - Sending a message shows it at once with a typing indicator, then the reply; the preview fills in from the returned fields (dates, both term styles, parties, multi-line modifications).
 - Enter sends, Shift+Enter adds a line, blank messages are ignored.
 - Errors (busy assistant, network failure, failed start) show an alert, and Retry resends without duplicating the message.
@@ -39,12 +46,12 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Accessibility: messages are labelled by speaker, the preview's checkboxes have names, and the component has no `h1` of its own.
 
 **`components/DownloadButton.test.tsx`: the download flow (component tests, PDF library mocked)**
-- Saves the file as `Mutual-NDA.pdf` and revokes the blob URL afterwards.
+- Saves the file under the document's file name and revokes the blob URL afterwards.
 - While busy, the button is marked `aria-disabled`, keeps keyboard focus, announces "Preparing PDF" to screen readers, and ignores repeat clicks.
 - Passes the current markdown to the PDF document.
 - On failure, shows an error alert, and a retry works.
 
-**`components/NdaPdf.test.tsx`: PDF content (renders a real PDF and extracts its text)**
+**`components/DocumentPdf.test.tsx`: PDF content (renders a real PDF and extracts its text)**
 - All entered values and `[X]`/`[ ]` markers appear in the PDF.
 - The Standard Terms start on a new page.
 - Sections 1–11 are numbered in order.
@@ -54,9 +61,12 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Line breaks are kept.
 - Very long input flows onto extra pages.
 
-**`e2e/nda-creator.spec.ts`: the real app in Chrome, Edge and mobile Chrome (Playwright, chat API stubbed so no LLM is called)**
+**`e2e/document-creator.spec.ts`: the real app in Chrome, Edge and mobile Chrome (Playwright, chat API stubbed so no LLM is called)**
+- No document is shown until the chat picks one; an unsupported request keeps choosing; picking a Cloud Service Agreement shows its generated Cover Page, and Download saves `CSA.pdf` with the details.
+- Switching documents keeps the parties.
+- Focus stays in the message box after clicking Send.
 - The page loads with the greeting and no console or page errors; today's date is filled in by the browser.
-- A chat turn fills in the agreement, and Download saves `Mutual-NDA.pdf` containing all the details.
+- An NDA chat turn fills in the agreement, and Download saves `Mutual-NDA.pdf` containing all the details.
 - Repeated downloads reflect changes made in the chat in between.
 - The conversation survives a reload; Start over begins a new one.
 - A busy assistant shows an alert, and Retry resends the message once.
@@ -74,7 +84,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - `/signin` redirects to `/signin/`, and the pages link to each other.
 - The backend health check responds.
 
-Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), the placeholder auth routes and the static file serving. `uv run pytest -m integration` runs one live chat against Groq (needs `GROQ_API_KEY`).
+Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), the placeholder auth routes and the static file serving. `uv run pytest -m integration` runs three paced live chats against Groq (needs `GROQ_API_KEY`).
 
 ## Manual test plan
 
@@ -84,10 +94,11 @@ Setup: put the API keys in `.env`, run `scripts/start-windows.ps1` (or the Mac/L
 
 | # | Area | Steps | Expected |
 | --- | --- | --- | --- |
-| M1 | First load | Open the page. | The chat is on the left with the assistant's greeting, and the full NDA on the right (stacked on a phone). The Effective Date in the document is today. Nothing flickers or jumps. |
-| M2 | Chat fills the NDA | Answer the assistant's questions in your own words, giving several details at once. | Each detail appears in the right place in the preview. The assistant confirms what it recorded and asks about what is missing, without inventing values. |
-| M3 | Terms | Say "the NDA lasts 5 years", then "actually until terminated", and "confidentiality forever". | The preview checkboxes follow each answer. |
-| M4 | Effective date | Say "starting next Monday", then give an exact date. | The document shows the resolved date, then the exact date. |
+| M1 | First load | Open the page. | The chat is on the left with the assistant's greeting and the message box focused; a placeholder is on the right (stacked on a phone), with no Download button until a document is chosen. Nothing flickers or jumps. |
+| M2b | Other documents | Ask for something unsupported (e.g. a lease), then for a Data Processing Agreement, then switch to a Pilot Agreement. | The assistant offers the closest supported agreement and asks; the DPA's Cover Page appears; after switching the parties are kept. Every reply ends with a question until all details are given. |
+| M2 | Chat fills the NDA | Ask for a Mutual NDA, then answer the assistant's questions in your own words, giving several details at once. | Each detail appears in the right place in the preview. The assistant confirms what it recorded and asks about what is missing, without inventing values. |
+| M3 | Terms | In an NDA chat, say "the NDA lasts 5 years", then "actually until terminated", and "confidentiality forever". | The preview checkboxes follow each answer. |
+| M4 | Effective date | In an NDA chat, say "starting next Monday", then give an exact date. | The document shows the resolved date, then the exact date. |
 | M5 | Download (Chrome, Edge) | Fill everything and click **Download PDF**. | `Mutual-NDA.pdf` downloads within a few seconds, with all the values. |
 | M6 | Download (Firefox, Safari) | Repeat M5 in Firefox and Safari. | Same as M5. (These browsers are not covered by the automated tests.) |
 | M7 | PDF viewers | Open the PDF in a browser viewer, Adobe Acrobat Reader and macOS Preview. | Four Letter-size pages. Cover Page first, the signature table intact, the Standard Terms starting on a new page. Text can be selected and searched. Links work. |

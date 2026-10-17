@@ -8,7 +8,7 @@ import { DownloadButton } from "./DownloadButton";
 const mocks = vi.hoisted(() => ({ toBlob: vi.fn(), pdf: vi.fn() }));
 const { toBlob } = mocks;
 vi.mock("@react-pdf/renderer", () => ({ pdf: mocks.pdf }));
-vi.mock("./NdaPdf", () => ({ NdaPdfDocument: () => null }));
+vi.mock("./DocumentPdf", () => ({ DocumentPdf: () => null }));
 
 let linkClicks: ReturnType<typeof vi.spyOn>;
 /** The <a> element the download clicked, if any. */
@@ -27,17 +27,17 @@ afterEach(() => {
 });
 
 describe("DownloadButton", () => {
-  it("generates the PDF and saves it as Mutual-NDA.pdf", async () => {
+  it("generates the PDF and saves it under the given file name", async () => {
     const blob = new Blob(["%PDF-"], { type: "application/pdf" });
     toBlob.mockResolvedValue(blob);
-    render(<DownloadButton markdown="# NDA" />);
+    render(<DownloadButton markdown="# NDA" title="Cloud Service Agreement" filename="CSA.pdf" />);
 
     await userEvent.click(screen.getByRole("button", { name: "Download PDF" }));
 
     await waitFor(() => expect(clickedLink()).toBeDefined());
     expect(URL.createObjectURL).toHaveBeenCalledWith(blob);
     expect(clickedLink()!.href).toBe("blob:nda");
-    expect(clickedLink()!.download).toBe("Mutual-NDA.pdf");
+    expect(clickedLink()!.download).toBe("CSA.pdf");
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
     await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:nda"), { timeout: 2000 });
   });
@@ -45,7 +45,7 @@ describe("DownloadButton", () => {
   it("marks itself busy while the PDF is prepared, keeps focus, and ignores repeat clicks", async () => {
     let finish!: (blob: Blob) => void;
     toBlob.mockReturnValue(new Promise<Blob>((resolve) => (finish = resolve)));
-    render(<DownloadButton markdown="# NDA" />);
+    render(<DownloadButton markdown="# NDA" title="Cloud Service Agreement" filename="CSA.pdf" />);
 
     await userEvent.click(screen.getByRole("button", { name: "Download PDF" }));
     const busy = await screen.findByRole("button", { name: "Preparing PDF…" });
@@ -62,17 +62,17 @@ describe("DownloadButton", () => {
     await waitFor(() => expect(clickedLink()).toBeDefined());
   });
 
-  it("passes the current markdown to the PDF document", async () => {
+  it("passes the current markdown and title to the PDF document", async () => {
     toBlob.mockResolvedValue(new Blob(["%PDF-"]));
-    render(<DownloadButton markdown="# Specific NDA" />);
+    render(<DownloadButton markdown="# Specific NDA" title="Cloud Service Agreement" filename="CSA.pdf" />);
     await userEvent.click(screen.getByRole("button", { name: "Download PDF" }));
     await waitFor(() => expect(clickedLink()).toBeDefined());
-    expect(mocks.pdf.mock.calls[0][0].props).toEqual({ markdown: "# Specific NDA" });
+    expect(mocks.pdf.mock.calls[0][0].props).toEqual({ markdown: "# Specific NDA", title: "Cloud Service Agreement" });
   });
 
   it("shows an error and allows a retry when generation fails", async () => {
     toBlob.mockRejectedValueOnce(new Error("boom"));
-    render(<DownloadButton markdown="# NDA" />);
+    render(<DownloadButton markdown="# NDA" title="Cloud Service Agreement" filename="CSA.pdf" />);
 
     await userEvent.click(screen.getByRole("button", { name: "Download PDF" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("could not be generated");

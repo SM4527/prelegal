@@ -1,8 +1,8 @@
-# Prelegal frontend: Mutual NDA Creator
+# Prelegal frontend: Legal Agreement Creator
 
-A Next.js app where a user chats with an AI assistant about a Mutual Non-Disclosure Agreement, sees the agreement fill in live from the answers, and downloads it as a PDF.
+A Next.js app where a user tells an AI assistant which agreement they need (an NDA, cloud service agreement, DPA and more), sees it fill in live from their answers, and downloads it as a PDF.
 
-The agreement text comes from the Common Paper Mutual NDA templates in the repo-level [`templates/`](../templates) directory (CC BY 4.0), which are read at build time.
+The agreement text comes from the Common Paper templates in the repo-level [`templates/`](../templates) directory (CC BY 4.0). They are read at build time, together with `catalog.json` and `documents.json`.
 
 ## Getting started
 
@@ -33,16 +33,18 @@ Notes:
 ## How it works
 
 - **`app/page.tsx`**: reads the Cover Page and Standard Terms templates when the page is built, so the page is prerendered as static HTML.
-- **`lib/nda.ts`**: the NDA data model (`NdaFormData`, the shape the backend returns) and `buildNdaMarkdown()`.
+- **`lib/templates.ts`**: reads the registry and template text at build time (`loadDocuments()`), normalising line endings.
+- **`lib/documents.ts`**: `buildDocumentMarkdown()`. The Mutual NDA uses its official Cover Page; every other document gets a generated Cover Page (key terms table and signature table with its party labels) followed by its Standard Terms.
+- **`lib/nda.ts`**: the NDA data model (`NdaFormData`), `buildNdaMarkdown()` and the shared markdown escaping helpers.
   - Fills in the Cover Page placeholders, checkboxes and signature table, then appends the Standard Terms.
   - User input is markdown-escaped, so it always displays literally.
   - Filling throws an error if the template text changes in a way it no longer recognizes.
 - **`lib/useConversation.ts`**: starts or resumes the chat (the id is kept in `localStorage`), sends messages, and handles errors, retry and start over.
-- **`components/NdaCreator.tsx`**: shows the chat and builds the markdown for the preview and download from the fields the assistant has filled in.
-- **`components/NdaChat.tsx`** and **`ChatInput.tsx`**: the message history, typing indicator, errors with Retry, and the message box (Enter sends, Shift+Enter adds a line).
-- **`components/NdaPreview.tsx`**: renders the markdown with `react-markdown` and `remark-gfm`. Raw HTML is not rendered.
-- **`components/NdaPdf.tsx`**: parses the same markdown and maps it to `@react-pdf/renderer` primitives. The Standard Terms start on a new page.
-- **`components/DownloadButton.tsx`**: loads the PDF library only when the user clicks it, then saves `Mutual-NDA.pdf`.
+- **`components/DocumentCreator.tsx`**: shows the chat and builds the markdown for the preview and download from the fields the assistant has filled in.
+- **`components/AssistantChat.tsx`** and **`ChatInput.tsx`**: the message history, typing indicator, errors with Retry, and the message box (Enter sends, Shift+Enter adds a line).
+- **`components/DocumentPreview.tsx`**: renders the markdown with `react-markdown` and `remark-gfm`. Raw HTML is not rendered.
+- **`components/DocumentPdf.tsx`**: parses the same markdown and maps it to `@react-pdf/renderer` primitives. The Standard Terms start on a new page.
+- **`components/DownloadButton.tsx`**: loads the PDF library only when the user clicks it, then saves the PDF named after the template (e.g. `CSA.pdf`).
 
 The signature and date cells in the PDF are left blank, to be signed by hand or through an e-signature tool.
 
