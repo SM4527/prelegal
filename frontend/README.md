@@ -39,7 +39,12 @@ Notes:
   - Fills in the Cover Page placeholders, checkboxes and signature table, then appends the Standard Terms.
   - User input is markdown-escaped, so it always displays literally.
   - Filling throws an error if the template text changes in a way it no longer recognizes.
-- **`lib/useConversation.ts`**: starts or resumes the chat (the id is kept in `localStorage`), sends messages, and handles errors, retry and start over.
+- **`lib/useConversation.ts`**: opens the conversation in `/?c=<id>`, starts a new one on `/?new`, or resumes the stored one (the id is kept in `localStorage`); sends messages, and handles errors, retry and New document.
+- **`lib/user.tsx`**: `UserProvider` asks the backend once per page load who is signed in; `useUser()` reads it (`undefined` while checking, `null` when signed out).
+- **`components/AppHeader.tsx`**: logo, New document and My documents links, and the account's email with Sign out, or Sign in and Sign up.
+- **`components/DocumentHistory.tsx`** (`/documents/`): the signed-in user's documents, each reopening in the creator.
+- **`components/AuthPage.tsx`** and **`AuthForm.tsx`**: the sign-in and sign-up screens.
+- **`lib/ui.ts`**: shared button, input, link and card classes. **`lib/disclaimer.ts`**: the draft notice shown with every document and in the PDF.
 - **`components/DocumentCreator.tsx`**: shows the chat and builds the markdown for the preview and download from the fields the assistant has filled in.
 - **`components/AssistantChat.tsx`** and **`ChatInput.tsx`**: the message history, typing indicator, errors with Retry, and the message box (Enter sends, Shift+Enter adds a line).
 - **`components/DocumentPreview.tsx`**: renders the markdown with `react-markdown` and `remark-gfm`. Raw HTML is not rendered.

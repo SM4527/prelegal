@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { buttonPrimary, inputClass } from "@/lib/ui";
 
 /**
  * Message box and Send button. Enter sends; Shift+Enter starts a new line. Focus stays in the
@@ -43,12 +44,12 @@ export function ChatInput({ disabled, onSend }: { disabled: boolean; onSend: (te
         placeholder="Type your answer..."
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="min-w-0 flex-1 resize-none rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-zinc-900 focus:outline-none focus:ring-1 focus:ring-zinc-900"
+        className={`${inputClass} min-w-0 flex-1 resize-none`}
       />
       <button
         type="submit"
         disabled={disabled}
-        className="rounded-md bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+        className={buttonPrimary}
       >
         Send
       </button>

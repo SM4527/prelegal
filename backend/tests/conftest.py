@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 _tmp = Path(tempfile.mkdtemp())
 STATIC_DIR = _tmp / "out"
-for page, title in [("", "Home"), ("signin/", "Sign in"), ("signup/", "Sign up")]:
+for page, title in [("", "Home"), ("signin/", "Sign in"), ("signup/", "Sign up"), ("documents/", "My documents")]:
     (STATIC_DIR / page).mkdir(parents=True, exist_ok=True)
     (STATIC_DIR / page / "index.html").write_text(f"<title>{title}</title>")
 os.environ["STATIC_DIR"] = str(STATIC_DIR)
@@ -26,6 +26,14 @@ def client():
     """A client with the app's lifespan run, so the database is freshly created."""
     with TestClient(app) as c:
         yield c
+
+
+PASSWORD = "correct horse battery"
+
+
+def sign_up(client, email: str):
+    """Create an account; the client keeps its session cookie."""
+    return client.post("/api/auth/signup", json={"email": email, "password": PASSWORD})
 
 
 def llm_response(content: str) -> SimpleNamespace:

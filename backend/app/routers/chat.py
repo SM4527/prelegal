@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app import conversations
-from app.conversations import Conversation, Message
+from app.auth import CurrentUser, OptionalUser, User
+from app.conversations import Conversation, Message, Summary
 from app.documents import default_fields, fields_model, turn_model
 from app.llm import complete_structured
 from app.prompts import system_prompt
@@ -40,31 +41,40 @@ def _next_state(document: str | None, turn) -> tuple[str | None, BaseModel]:
     return turn.document, fields
 
 
-def _load(conversation_id: str) -> Conversation:
-    conversation = conversations.get(conversation_id)
+def _load(conversation_id: str, user: User | None) -> Conversation:
+    """The conversation if this user may see it (404 otherwise); a signed-in user claims an unowned one."""
+    conversation = conversations.get(conversation_id, user.id if user else None)
     if conversation is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Conversation not found.")
+    if user:
+        conversations.claim(conversation_id, user.id)
     return conversation
 
 
+@router.get("")
+def list_conversations(user: CurrentUser) -> list[Summary]:
+    """The signed-in user's documents, most recently updated first."""
+    return conversations.list_for_user(user.id)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_conversation() -> Conversation:
+async def create_conversation(user: OptionalUser) -> Conversation:
     """Start a conversation with an AI-generated greeting."""
     fields = default_fields(None)
     turn = await _ask(None, fields, [], OPENING_PROMPT)
     # The user hasn't said anything yet, so only the greeting is kept.
-    return conversations.create(fields, turn.reply)
+    return conversations.create(fields, turn.reply, user.id if user else None)
 
 
 @router.get("/{conversation_id}")
-def get_conversation(conversation_id: str) -> Conversation:
-    return _load(conversation_id)
+def get_conversation(conversation_id: str, user: OptionalUser) -> Conversation:
+    return _load(conversation_id, user)
 
 
 @router.post("/{conversation_id}/messages")
-async def send_message(conversation_id: str, message: MessageIn) -> Conversation:
+async def send_message(conversation_id: str, message: MessageIn, user: OptionalUser) -> Conversation:
     """Send a user message; the reply and updated state are stored only if the LLM call succeeds."""
-    conversation = _load(conversation_id)
+    conversation = _load(conversation_id, user)
     fields = fields_model(conversation.document).model_validate(conversation.fields)
     turn = await _ask(conversation.document, fields, conversation.messages, message.content)
     document, fields = _next_state(conversation.document, turn)

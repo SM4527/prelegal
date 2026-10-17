@@ -50,7 +50,7 @@ def test_each_app_start_has_empty_database():
 
 def test_startup_creates_chat_tables(client):
     tables = {row[0] for row in query("SELECT name FROM sqlite_master WHERE type = 'table'")}
-    assert {"users", "conversations", "messages"} <= tables
+    assert {"users", "sessions", "conversations", "messages"} <= tables
 
 
 def test_message_role_must_be_user_or_assistant(client):

@@ -1,14 +1,14 @@
 # prelegal
 A platform for drafting common legal agreements
 
-> **Status: In progress.** This project is under active development and is expected to be completed by **October 20, 2026**.
+> **Disclaimer:** Documents drafted with Prelegal are drafts only. It is not legal advice and should be reviewed by a qualified lawyer or attorney.
 
 ## Repository layout
 
 - `templates/`: Common Paper legal agreement templates (CC BY 4.0), listed in `catalog.json`.
 - `documents.json`: for each supported document, its party labels and the key terms the assistant collects. Read by the backend and the frontend build.
-- `frontend/`: Next.js app, statically exported to `frontend/out/`. Features the Legal Agreement Creator: an AI assistant works out which agreement the user needs and fills it in from a chat. Plus sign-in and sign-up pages (placeholders).
-- `backend/`: FastAPI app (uv project). Serves the API under `/api` (including the chat at `/api/conversations`) and the frontend build at `/`. Its SQLite database, which stores users and conversations, is recreated on every start.
+- `frontend/`: Next.js app, statically exported to `frontend/out/`. Features the Legal Agreement Creator: an AI assistant works out which agreement the user needs and fills it in from a chat. Sign-in is optional; signed-in users find their documents under My documents.
+- `backend/`: FastAPI app (uv project). Serves the API under `/api` (including the chat at `/api/conversations`) and the frontend build at `/`. Its SQLite database, which stores users, sessions and conversations, is recreated on every start, so accounts last until a restart.
 - `scripts/`: start and stop the Docker container.
 
 ## Run with Docker
@@ -39,7 +39,5 @@ cd backend && uv run pytest -m integration   # three paced live chats against Gr
 cd frontend && npm test            # unit and component tests
 cd frontend && npm run test:e2e    # browser tests against FastAPI serving the build
 ```
-
-Account sign-up and sign-in are placeholders: the pages and `/api/auth/*` routes exist, but the routes respond `501 Not Implemented`.
 
 See [frontend/README.md](frontend/README.md) and [frontend/TESTING.md](frontend/TESTING.md) for details.

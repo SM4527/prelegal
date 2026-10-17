@@ -41,7 +41,8 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Sending a message shows it at once with a typing indicator, then the reply; the preview fills in from the returned fields (dates, both term styles, parties, multi-line modifications).
 - Enter sends, Shift+Enter adds a line, blank messages are ignored.
 - Errors (busy assistant, network failure, failed start) show an alert, and Retry resends without duplicating the message.
-- Start over gives a fresh conversation and document.
+- New document gives a fresh conversation and document; `/?c=<id>` opens that conversation and `/?new` starts one, then the URL is tidied.
+- The draft disclaimer shows with the document; signed out, a note suggests signing in to save it.
 - Messages and values are shown literally, never as markdown or HTML.
 - Accessibility: messages are labelled by speaker, the preview's checkboxes have names, and the component has no `h1` of its own.
 
@@ -60,6 +61,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - User input is printed literally.
 - Line breaks are kept.
 - Very long input flows onto extra pages.
+- The draft disclaimer is at the foot of every page.
 
 **`e2e/document-creator.spec.ts`: the real app in Chrome, Edge and mobile Chrome (Playwright, chat API stubbed so no LLM is called)**
 - No document is shown until the chat picks one; an unsupported request keeps choosing; picking a Cloud Service Agreement shows its generated Cover Page, and Download saves `CSA.pdf` with the details.
@@ -68,23 +70,27 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - The page loads with the greeting and no console or page errors; today's date is filled in by the browser.
 - An NDA chat turn fills in the agreement, and Download saves `Mutual-NDA.pdf` containing all the details.
 - Repeated downloads reflect changes made in the chat in between.
-- The conversation survives a reload; Start over begins a new one.
+- The conversation survives a reload; New document (in the chat panel or the header) begins a new one.
+- The disclaimer is shown above the preview and is in the downloaded PDF.
 - A busy assistant shows an alert, and Retry resends the message once.
 - If the PDF library can't load (offline), an error appears, and a retry works once back online. The library loads only when Download is clicked.
 - Keyboard-only use works: type, Enter to send (focus stays in the message box), Enter on Download.
 - HTML and markdown in messages and values are shown as text.
 - No horizontal scrolling at desktop or phone width.
 
-**`lib/api.test.ts` and `components/AuthForm.test.tsx`: placeholder auth (unit and component tests)**
-- The API client calls the right `/api/auth/*` and `/api/conversations/*` routes and methods, and turns error responses into an `ApiError` with FastAPI's `detail`.
-- The sign-in and sign-up forms submit the credentials, show the backend's error message or a generic one, and link to each other.
+**`lib/api.test.ts`, `components/AuthForm.test.tsx`, `AppHeader.test.tsx` and `DocumentHistory.test.tsx`: accounts (unit and component tests)**
+- The API client calls the right `/api/auth/*` and `/api/conversations` routes and methods, accepts the empty 204 from sign-out, and turns error responses into an `ApiError` with FastAPI's `detail`.
+- The sign-in and sign-up forms submit the credentials, open the creator on success, show the backend's error message or a generic one, are disabled while submitting, and link to each other.
+- The header shows Sign in and Sign up when signed out, or the email and Sign out, which forgets the stored conversation.
+- My documents lists the documents with links back to the creator, or shows an empty state, a sign-in prompt when signed out, or an error.
 
-**`e2e/auth.spec.ts`: sign-in and sign-up pages against the real backend (Playwright)**
-- Each page submits to its route, which responds 501, and shows the message.
-- `/signin` redirects to `/signin/`, and the pages link to each other.
-- The backend health check responds.
+**`e2e/auth.spec.ts`: accounts against the real auth backend (Playwright, chat API stubbed)**
+- Sign up, sign out and sign back in (email in any case); wrong passwords and taken emails show the backend's message.
+- The creator works signed out and suggests creating an account; My documents asks a signed-out visitor to sign in.
+- My documents lists the user's documents and reopens one.
+- `/signin` redirects to `/signin/`, the pages link to each other, and the backend health check responds.
 
-Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), the placeholder auth routes and the static file serving. `uv run pytest -m integration` runs three paced live chats against Groq (needs `GROQ_API_KEY`).
+Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), accounts (hashing, sessions, sign-out, case-insensitive emails), conversation ownership (404 for other users, a signed-out draft saved on sign-in), the documents list and the static file serving. `uv run pytest -m integration` runs three paced live chats against Groq (needs `GROQ_API_KEY`).
 
 ## Manual test plan
 
@@ -111,5 +117,6 @@ Setup: put the API keys in `.env`, run `scripts/start-windows.ps1` (or the Mac/L
 | M14 | Known limitation | Enter a non-Latin name, for example `Łukasz`, `Иван`, `山田` or an emoji. | The preview is correct, but the PDF drops or garbles these characters, because it uses the built-in Helvetica font. This is a known gap, not a regression. |
 | M15 | Errors | In devtools, set the network to Offline after the page loads, then click Download. | A red "PDF could not be generated" message appears. Going back online and retrying works. (Also automated in the end-to-end tests.) |
 | M16 | Busy assistant | Send many messages quickly until the free-tier limit is hit (or stop the network to the backend). | A red alert explains the problem; Retry resends the last message. |
+| M17 | Accounts | Draft a document signed out, then sign up from the header. Open My documents, then sign out and back in. | The draft is in My documents and reopens where you left off. Signed out, the header offers Sign in and Sign up, and My documents asks you to sign in. |
 
 Record each run with the date, browser and OS versions, and any deviations, for example in the PR description.
