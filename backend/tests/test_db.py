@@ -46,3 +46,14 @@ def test_each_app_start_has_empty_database():
         add_user("a@example.com")
     with TestClient(app):
         assert query("SELECT * FROM users") == []
+
+
+def test_startup_creates_chat_tables(client):
+    tables = {row[0] for row in query("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    assert {"users", "conversations", "messages"} <= tables
+
+
+def test_message_role_must_be_user_or_assistant(client):
+    query("INSERT INTO conversations (id, fields) VALUES ('c1', '{}')")
+    with pytest.raises(sqlite3.IntegrityError):
+        query("INSERT INTO messages (conversation_id, role, content) VALUES ('c1', 'system', 'x')")

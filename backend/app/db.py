@@ -11,7 +11,21 @@ CREATE TABLE users (
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
+);
+
+CREATE TABLE conversations (
+    id TEXT PRIMARY KEY,
+    fields TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL REFERENCES conversations(id),
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
@@ -27,3 +41,10 @@ def init_db() -> None:
     path.unlink(missing_ok=True)
     with closing(sqlite3.connect(path)) as conn:
         conn.executescript(SCHEMA)
+
+
+def connect() -> sqlite3.Connection:
+    """Open the database with rows addressable by column name."""
+    conn = sqlite3.connect(db_path())
+    conn.row_factory = sqlite3.Row
+    return conn
