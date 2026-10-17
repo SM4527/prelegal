@@ -49,6 +49,19 @@ describe("DocumentPdf", () => {
     expect(termsPage).toBeGreaterThan(0);
   });
 
+  it("keeps the DPA's deeply indented clauses, which parse as a code block", async () => {
+    const fields: DocumentFields = {
+      party1: { name: "", title: "", company: "", noticeAddress: "" },
+      party2: { name: "", title: "", company: "", noticeAddress: "" },
+      ...Object.fromEntries(documents.dpa.fields.map((f) => [f.key, ""])),
+    };
+    const { pages } = await renderPdf(buildDocumentMarkdown(documents.dpa, fields, "2026-10-13"), "Data Processing Agreement");
+
+    const all = squash(pages.join(" "));
+    expect(all).toContain("i. The optional docking clause in Clause 7 does not apply;");
+    expect(all).toContain("ii. In Clause 9, Option 2 (general written authorization) applies");
+  });
+
   it("renders the filled Cover Page and the Standard Terms on a new page", async () => {
     const pages = await renderPages({
       purpose: "Exploring a joint venture.",

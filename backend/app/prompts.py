@@ -61,7 +61,9 @@ def _details(document: str) -> str:
     """One line per key term, from the field descriptions the LLM schema also carries."""
     info = fields_model(document).model_fields
     return "\n".join(
-        f"- {field.alias or name}: {field.description}" for name, field in info.items() if not name.startswith("party")
+        f"- {field.alias or name}: {field.description}"
+        for name, field in info.items()
+        if name not in ("party1", "party2")
     )
 
 

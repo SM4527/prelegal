@@ -37,7 +37,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - No preview or download until a document is chosen; choosing one shows its Cover Page.
 - Focus returns to the message box when the greeting arrives, after clicking Send, after a reply and after an error.
 - Starts a conversation with the assistant's greeting and remembers its id; resumes it after a reload, or starts afresh if the backend no longer knows it.
-- Default document, with today's date while no date is chosen.
+- The Mutual NDA preview uses today's date while no date is chosen.
 - Sending a message shows it at once with a typing indicator, then the reply; the preview fills in from the returned fields (dates, both term styles, parties, multi-line modifications).
 - Enter sends, Shift+Enter adds a line, blank messages are ignored.
 - Errors (busy assistant, network failure, failed start) show an alert, and Retry resends without duplicating the message.
@@ -84,7 +84,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - `/signin` redirects to `/signin/`, and the pages link to each other.
 - The backend health check responds.
 
-Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), the placeholder auth routes and the static file serving. `uv run pytest -m integration` runs one live chat against Groq (needs `GROQ_API_KEY`).
+Backend tests live in `../backend/tests` (`uv run pytest` from `backend/`). They cover the fresh database on each start, the chat API with the LLM mocked (one structured call per turn, nothing stored when it fails, 503 when busy, 502 on unusable output), the placeholder auth routes and the static file serving. `uv run pytest -m integration` runs three paced live chats against Groq (needs `GROQ_API_KEY`).
 
 ## Manual test plan
 
@@ -94,11 +94,11 @@ Setup: put the API keys in `.env`, run `scripts/start-windows.ps1` (or the Mac/L
 
 | # | Area | Steps | Expected |
 | --- | --- | --- | --- |
-| M1 | First load | Open the page. | The chat is on the left with the assistant's greeting, and the full NDA on the right (stacked on a phone). The Effective Date in the document is today. Nothing flickers or jumps. |
+| M1 | First load | Open the page. | The chat is on the left with the assistant's greeting and the message box focused; a placeholder is on the right (stacked on a phone), with no Download button until a document is chosen. Nothing flickers or jumps. |
 | M2b | Other documents | Ask for something unsupported (e.g. a lease), then for a Data Processing Agreement, then switch to a Pilot Agreement. | The assistant offers the closest supported agreement and asks; the DPA's Cover Page appears; after switching the parties are kept. Every reply ends with a question until all details are given. |
-| M2 | Chat fills the NDA | Answer the assistant's questions in your own words, giving several details at once. | Each detail appears in the right place in the preview. The assistant confirms what it recorded and asks about what is missing, without inventing values. |
-| M3 | Terms | Say "the NDA lasts 5 years", then "actually until terminated", and "confidentiality forever". | The preview checkboxes follow each answer. |
-| M4 | Effective date | Say "starting next Monday", then give an exact date. | The document shows the resolved date, then the exact date. |
+| M2 | Chat fills the NDA | Ask for a Mutual NDA, then answer the assistant's questions in your own words, giving several details at once. | Each detail appears in the right place in the preview. The assistant confirms what it recorded and asks about what is missing, without inventing values. |
+| M3 | Terms | In an NDA chat, say "the NDA lasts 5 years", then "actually until terminated", and "confidentiality forever". | The preview checkboxes follow each answer. |
+| M4 | Effective date | In an NDA chat, say "starting next Monday", then give an exact date. | The document shows the resolved date, then the exact date. |
 | M5 | Download (Chrome, Edge) | Fill everything and click **Download PDF**. | `Mutual-NDA.pdf` downloads within a few seconds, with all the values. |
 | M6 | Download (Firefox, Safari) | Repeat M5 in Firefox and Safari. | Same as M5. (These browsers are not covered by the automated tests.) |
 | M7 | PDF viewers | Open the PDF in a browser viewer, Adobe Acrobat Reader and macOS Preview. | Four Letter-size pages. Cover Page first, the signature table intact, the Standard Terms starting on a new page. Text can be selected and searched. Links work. |

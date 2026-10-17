@@ -26,6 +26,9 @@ class Party(CamelModel):
     notice_address: str = Field(description="Email or postal address for legal notices")
 
 
+EMPTY_PARTY = Party(name="", title="", company="", notice_address="")
+
+
 class NdaFields(CamelModel):
     purpose: str = Field(description="How Confidential Information may be used")
     effective_date: str = Field(description='ISO date yyyy-mm-dd, or "" for today')
@@ -40,7 +43,6 @@ class NdaFields(CamelModel):
 
 def default_fields() -> NdaFields:
     """Starting values; mirrors defaultFormData in frontend/lib/nda.ts."""
-    empty = Party(name="", title="", company="", notice_address="")
     return NdaFields(
         purpose="Evaluating whether to enter into a business relationship with the other party.",
         effective_date="",
@@ -49,6 +51,6 @@ def default_fields() -> NdaFields:
         governing_law="",
         jurisdiction="",
         modifications="",
-        party1=empty,
-        party2=empty,
+        party1=EMPTY_PARTY,
+        party2=EMPTY_PARTY,
     )

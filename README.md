@@ -35,7 +35,7 @@ For UI work, `npm run dev` in `frontend/` gives hot reload at http://localhost:3
 
 ```bash
 cd backend && uv run pytest        # API (LLM mocked), database and static serving
-cd backend && uv run pytest -m integration   # one live chat against Groq
+cd backend && uv run pytest -m integration   # three paced live chats against Groq
 cd frontend && npm test            # unit and component tests
 cd frontend && npm run test:e2e    # browser tests against FastAPI serving the build
 ```

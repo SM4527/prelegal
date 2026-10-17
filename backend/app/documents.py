@@ -9,11 +9,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from app import nda
-from app.nda import CamelModel, NdaFields, Party
+from app.nda import EMPTY_PARTY, CamelModel, NdaFields, Party
 
 ROOT = Path(os.environ.get("DOCUMENTS_ROOT", Path(__file__).parents[2]))
 STRICT = ConfigDict(extra="forbid")
-EMPTY_PARTY = Party(name="", title="", company="", notice_address="")
 
 REPLY = Field(
     description="Message to show the user. While a document is not chosen or any detail is missing, "
