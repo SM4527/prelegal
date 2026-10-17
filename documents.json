@@ -1,0 +1,164 @@
+{
+  "documents": [
+    {
+      "id": "mutual-nda",
+      "template": "Mutual-NDA.md",
+      "coverPage": "Mutual-NDA-coverpage.md",
+      "parties": ["Party 1", "Party 2"],
+      "fields": []
+    },
+    {
+      "id": "csa",
+      "template": "CSA.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "cloudService", "label": "Cloud Service", "description": "Name and short description of the cloud product being sold"},
+        {"key": "orderDate", "label": "Order Date", "description": "Date the order is placed"},
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the agreement takes effect"},
+        {"key": "subscriptionPeriod", "label": "Subscription Period", "description": "Length of the subscription, e.g. 12 months"},
+        {"key": "nonRenewalNoticeDate", "label": "Non-Renewal Notice Date", "description": "How long before renewal a party must give notice of non-renewal, e.g. 30 days"},
+        {"key": "fees", "label": "Fees", "description": "Subscription fees, currency and billing frequency"},
+        {"key": "technicalSupport", "label": "Technical Support", "description": "Support the Provider offers, e.g. email support on business days"},
+        {"key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's liability, e.g. fees paid in the prior 12 months"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    },
+    {
+      "id": "software-license",
+      "template": "Software-License-Agreement.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "software", "label": "Software", "description": "Name and short description of the licensed software"},
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the agreement takes effect"},
+        {"key": "subscriptionPeriod", "label": "Subscription Period", "description": "Length of the license term, e.g. 12 months"},
+        {"key": "permittedUses", "label": "Permitted Uses", "description": "What the Customer may use the software for"},
+        {"key": "licenseLimits", "label": "License Limits", "description": "Limits on use, e.g. number of users, seats or installations"},
+        {"key": "fees", "label": "Fees", "description": "License fees, currency and billing frequency"},
+        {"key": "paymentProcess", "label": "Payment Process", "description": "How and when the Customer pays, e.g. invoiced annually, due in 30 days"},
+        {"key": "warrantyPeriod", "label": "Warranty Period", "description": "How long the software warranty lasts, e.g. 90 days"},
+        {"key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's liability, e.g. fees paid in the prior 12 months"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    },
+    {
+      "id": "sla",
+      "template": "SLA.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "agreement", "label": "Agreement", "description": "The cloud service agreement this SLA adds to, e.g. its name and date"},
+        {"key": "subscriptionPeriod", "label": "Subscription Period", "description": "Period the service levels apply to, e.g. 12 months"},
+        {"key": "targetUptime", "label": "Target Uptime", "description": "Monthly uptime commitment, e.g. 99.9%"},
+        {"key": "uptimeCredit", "label": "Uptime Credit", "description": "Service credit when uptime is missed, e.g. 10% of monthly fees"},
+        {"key": "targetResponseTime", "label": "Target Response Time", "description": "Time to respond to support requests, e.g. 4 business hours"},
+        {"key": "responseTimeCredit", "label": "Response Time Credit", "description": "Service credit when response times are missed"},
+        {"key": "supportChannel", "label": "Support Channel", "description": "How the Customer requests support, e.g. support@provider.com"},
+        {"key": "scheduledDowntime", "label": "Scheduled Downtime", "description": "Planned maintenance windows excluded from uptime"}
+      ]
+    },
+    {
+      "id": "dpa",
+      "template": "DPA.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "agreement", "label": "Agreement", "description": "The main agreement under which personal data is processed"},
+        {"key": "natureAndPurposeOfProcessing", "label": "Nature and Purpose of Processing", "description": "What the Provider does with the personal data and why"},
+        {"key": "durationOfProcessing", "label": "Duration of Processing", "description": "How long processing continues, e.g. for the term of the Agreement"},
+        {"key": "frequencyOfTransfer", "label": "Frequency of Transfer", "description": "How often data is transferred, e.g. continuous"},
+        {"key": "categoriesOfDataSubjects", "label": "Categories of Data Subjects", "description": "Whose data is processed, e.g. Customer's employees and end users"},
+        {"key": "categoriesOfPersonalData", "label": "Categories of Personal Data", "description": "Types of personal data, e.g. names, email addresses"},
+        {"key": "specialCategoryData", "label": "Special Category Data", "description": "Any special category data (e.g. health data), or none"},
+        {"key": "approvedSubprocessors", "label": "Approved Subprocessors", "description": "Subprocessors the Customer approves, e.g. AWS for hosting"},
+        {"key": "governingMemberState", "label": "Governing Member State", "description": "EU member state whose law governs the transfer clauses, e.g. Ireland"},
+        {"key": "providerSecurityContact", "label": "Provider Security Contact", "description": "Email for security and privacy notices"}
+      ]
+    },
+    {
+      "id": "baa",
+      "template": "BAA.md",
+      "parties": ["Provider", "Company"],
+      "fields": [
+        {"key": "agreement", "label": "Agreement", "description": "The services agreement under which the Provider handles protected health information"},
+        {"key": "baaEffectiveDate", "label": "BAA Effective Date", "description": "Date this BAA takes effect"},
+        {"key": "breachNotificationPeriod", "label": "Breach Notification Period", "description": "How quickly the Provider must report a breach, e.g. 5 business days"},
+        {"key": "limitations", "label": "Limitations", "description": "Limits on how the Provider may use PHI, e.g. no offshoring or de-identification"}
+      ]
+    },
+    {
+      "id": "ai-addendum",
+      "template": "AI-Addendum.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "agreement", "label": "Agreement", "description": "The product agreement this addendum adds to"},
+        {"key": "trainingData", "label": "Training Data", "description": "Customer data the Provider may use to train models, or none"},
+        {"key": "trainingPurposes", "label": "Training Purposes", "description": "What that training may be used for"},
+        {"key": "trainingRestrictions", "label": "Training Restrictions", "description": "Limits on model training with Customer data"},
+        {"key": "improvementRestrictions", "label": "Improvement Restrictions", "description": "Limits on using Customer data to improve the AI services"}
+      ]
+    },
+    {
+      "id": "psa",
+      "template": "PSA.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the agreement takes effect"},
+        {"key": "sowTerm", "label": "SOW Term", "description": "How long the statement of work lasts"},
+        {"key": "deliverables", "label": "Deliverables", "description": "The services and deliverables the Provider will produce"},
+        {"key": "fees", "label": "Fees", "description": "Fees for the services, currency and basis (fixed or hourly)"},
+        {"key": "paymentPeriod", "label": "Payment Period", "description": "Days to pay an invoice, e.g. 30 days"},
+        {"key": "rejectionPeriod", "label": "Rejection Period", "description": "Time the Customer has to reject a deliverable, e.g. 10 days"},
+        {"key": "customerObligations", "label": "Customer Obligations", "description": "What the Customer must provide, e.g. access and timely feedback"},
+        {"key": "insuranceMinimums", "label": "Insurance Minimums", "description": "Insurance the Provider must carry"},
+        {"key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's liability, e.g. fees paid in the prior 12 months"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    },
+    {
+      "id": "design-partner",
+      "template": "Design-Partner-Agreement.md",
+      "parties": ["Provider", "Partner"],
+      "fields": [
+        {"key": "product", "label": "Product", "description": "The pre-release product the Partner gets access to"},
+        {"key": "program", "label": "Program", "description": "What the design partner program involves, e.g. feedback sessions"},
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the agreement takes effect"},
+        {"key": "term", "label": "Term", "description": "How long the agreement lasts, e.g. 6 months"},
+        {"key": "fees", "label": "Fees", "description": "Any fees for the program, or none"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    },
+    {
+      "id": "pilot",
+      "template": "Pilot-Agreement.md",
+      "parties": ["Provider", "Customer"],
+      "fields": [
+        {"key": "product", "label": "Product", "description": "The product the Customer evaluates"},
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the pilot agreement takes effect"},
+        {"key": "pilotPeriod", "label": "Pilot Period", "description": "How long the pilot lasts, e.g. 60 days"},
+        {"key": "fees", "label": "Fees", "description": "Any fees for the pilot, or none"},
+        {"key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's liability"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    },
+    {
+      "id": "partnership",
+      "template": "Partnership-Agreement.md",
+      "parties": ["Company", "Partner"],
+      "fields": [
+        {"key": "effectiveDate", "label": "Effective Date", "description": "Date the partnership starts"},
+        {"key": "endDate", "label": "End Date", "description": "Date the partnership ends"},
+        {"key": "obligations", "label": "Obligations", "description": "What each party agrees to do"},
+        {"key": "territory", "label": "Territory", "description": "Where the partnership applies, e.g. North America"},
+        {"key": "paymentProcess", "label": "Payment Process", "description": "How payments between the parties are calculated and made"},
+        {"key": "paymentSchedule", "label": "Payment Schedule", "description": "When payments are due, e.g. quarterly"},
+        {"key": "brandGuidelines", "label": "Brand Guidelines", "description": "Rules for using each other's trademarks"},
+        {"key": "generalCapAmount", "label": "General Cap Amount", "description": "Limit on each party's liability"},
+        {"key": "governingLaw", "label": "Governing Law", "description": "US state whose laws govern the agreement, e.g. Delaware"},
+        {"key": "chosenCourts", "label": "Chosen Courts", "description": "Courts for disputes, e.g. courts located in New Castle, DE"}
+      ]
+    }
+  ]
+}

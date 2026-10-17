@@ -3,8 +3,9 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatMessage, Conversation } from "@/lib/api";
+import type { DocumentFields } from "@/lib/documents";
 import { defaultFormData, type NdaFormData } from "@/lib/nda";
-import { loadNdaTemplates } from "@/lib/templates";
+import { loadDocuments } from "@/lib/templates";
 import { STORAGE_KEY } from "@/lib/useConversation";
 import { DocumentCreator } from "./DocumentCreator";
 
@@ -15,11 +16,25 @@ vi.mock("@/lib/api", async (importOriginal) => ({
 }));
 const { ApiError } = await import("@/lib/api");
 
-const templates = loadNdaTemplates();
+const documents = loadDocuments();
 const GREETING: ChatMessage = { role: "assistant", content: "Hi! Who are the two parties?" };
 
+/** A conversation drafting the Mutual NDA (most tests), with `fields` recorded. */
 function conversation(fields: Partial<NdaFormData> = {}, messages: ChatMessage[] = [GREETING], id = "c1"): Conversation {
-  return { id, messages, fields: { ...defaultFormData, ...fields } };
+  return { id, messages, document: "mutual-nda", fields: { ...defaultFormData, ...fields } as unknown as DocumentFields };
+}
+
+const emptyParty = { name: "", title: "", company: "", noticeAddress: "" };
+
+/** A conversation where no document has been chosen yet. */
+function choosing(messages: ChatMessage[] = [GREETING]): Conversation {
+  return { id: "c1", messages, document: null, fields: { party1: emptyParty, party2: emptyParty } };
+}
+
+/** A conversation drafting the Cloud Service Agreement, with `fields` recorded. */
+function drafting(fields: Record<string, unknown>, messages: ChatMessage[]): Conversation {
+  const blank = Object.fromEntries(documents.csa.fields.map((f) => [f.key, ""]));
+  return { id: "c1", messages, document: "csa", fields: { party1: emptyParty, party2: emptyParty, ...blank, ...fields } };
 }
 
 /** A conversation after the user said `text` and the assistant replied, with `fields` recorded. */
@@ -29,8 +44,8 @@ function afterTurn(text: string, reply: string, fields: Partial<NdaFormData> = {
 
 async function setup() {
   const user = userEvent.setup();
-  render(<DocumentCreator templates={templates} />);
-  const preview = screen.getByRole("region", { name: "Mutual NDA preview" });
+  render(<DocumentCreator documents={documents} />);
+  const preview = screen.getByRole("region", { name: "Document preview" });
   const log = screen.getByRole("log", { name: "Conversation" });
   await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeEnabled());
   return { user, preview, log };
@@ -227,7 +242,7 @@ describe("DocumentCreator", () => {
       .mockRejectedValueOnce(new ApiError(503, "The assistant is busy, please try again in a minute."))
       .mockResolvedValueOnce(conversation());
     const user = userEvent.setup();
-    render(<DocumentCreator templates={templates} />);
+    render(<DocumentCreator documents={documents} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The assistant is busy");
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
@@ -296,5 +311,65 @@ describe("DocumentCreator", () => {
   it("offers a PDF download", async () => {
     await setup();
     expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
+  });
+it("shows a placeholder and no download until a document is chosen", async () => {
+    mocks.create.mockResolvedValue(choosing());
+    const { preview } = await setup();
+
+    expect(preview).toHaveTextContent("Your agreement will appear here once you and the assistant have picked which one you need.");
+    expect(screen.queryByRole("button", { name: "Download PDF" })).not.toBeInTheDocument();
+  });
+
+  it("shows the chosen document once the assistant picks it, with its own cover page and parties", async () => {
+    mocks.create.mockResolvedValue(choosing());
+    mocks.send.mockResolvedValue(
+      drafting(
+        { party1: { ...emptyParty, company: "Acme Inc" }, party2: { ...emptyParty, company: "Globex LLC" }, fees: "$2,000 per month" },
+        [GREETING, { role: "user", content: "A CSA between Acme and Globex" }, { role: "assistant", content: "What is the Cloud Service?" }],
+      ),
+    );
+    const { user, preview } = await setup();
+
+    await say(user, "A CSA between Acme and Globex");
+
+    expect(await within(preview).findByRole("heading", { name: "Cloud Service Agreement Cover Page" })).toBeInTheDocument();
+    expect(tableRow(preview, "Fees")).toEqual(["Fees", "$2,000 per month"]);
+    expect(tableRow(preview, "Subscription Period")).toEqual(["Subscription Period", "[Subscription Period]"]);
+    expect(within(preview).getByRole("columnheader", { name: "Provider" })).toBeInTheDocument();
+    expect(tableRow(preview, "Company")).toEqual(["Company", "Acme Inc", "Globex LLC"]);
+    expect(within(preview).getByRole("heading", { name: /^Cloud Service Agreement$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download PDF" })).toBeEnabled();
+  });
+
+  it("focuses the message box once the greeting arrives", async () => {
+    await setup();
+    expect(screen.getByRole("textbox", { name: "Message" })).toHaveFocus();
+  });
+
+  it("keeps focus in the message box after clicking Send and when the reply arrives", async () => {
+    let reply!: (c: Conversation) => void;
+    mocks.send.mockReturnValue(new Promise((resolve) => (reply = resolve)));
+    const { user, log } = await setup();
+    const box = screen.getByRole("textbox", { name: "Message" });
+
+    await say(user, "Delaware law");
+    expect(box).toHaveFocus();
+
+    box.blur();
+    reply(afterTurn("Delaware law", "Delaware it is. Who is party 1?"));
+    await within(log).findByText("Delaware it is. Who is party 1?");
+    expect(box).toHaveFocus();
+  });
+
+  it("returns focus to the message box after an error", async () => {
+    mocks.send.mockRejectedValue(new ApiError(503, "The assistant is busy, please try again in a minute."));
+    const { user } = await setup();
+    const box = screen.getByRole("textbox", { name: "Message" });
+    await user.type(box, "Hello");
+    box.blur();
+    await user.click(screen.getByRole("button", { name: "Send" }));
+
+    await screen.findByRole("alert");
+    expect(box).toHaveFocus();
   });
 });

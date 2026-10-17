@@ -29,7 +29,7 @@ function Bubble({ role, content }: ChatMessage) {
   );
 }
 
-/** The conversation with the NDA assistant: message history, status, errors and the message box. */
+/** The conversation with the assistant: message history, status, errors and the message box. */
 export function AssistantChat({ messages, pending, status, error, onSend, onRetry, onStartOver }: AssistantChatProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const busy = status !== "idle";
@@ -42,7 +42,7 @@ export function AssistantChat({ messages, pending, status, error, onSend, onRetr
   return (
     <section aria-label="Assistant chat" className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
       <header className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-brand-navy">NDA assistant</h2>
+        <h2 className="text-sm font-semibold text-brand-navy">Prelegal assistant</h2>
         <button type="button" onClick={onStartOver} disabled={busy} className="text-sm text-brand-blue underline disabled:opacity-50">
           Start over
         </button>

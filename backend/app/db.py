@@ -15,6 +15,7 @@ CREATE TABLE users (
 
 CREATE TABLE conversations (
     id TEXT PRIMARY KEY,
+    document TEXT,
     fields TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

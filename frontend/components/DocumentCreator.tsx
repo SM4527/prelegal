@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { buildNdaMarkdown, defaultFormData, todayIso, type NdaTemplates } from "@/lib/nda";
+import { buildDocumentMarkdown, type DocumentInfo } from "@/lib/documents";
+import { todayIso } from "@/lib/nda";
 import { useConversation } from "@/lib/useConversation";
-import { DownloadButton } from "./DownloadButton";
 import { AssistantChat } from "./AssistantChat";
 import { DocumentPreview } from "./DocumentPreview";
+import { DownloadButton } from "./DownloadButton";
 
 const noSubscription = () => () => {};
 
@@ -18,15 +19,17 @@ function useToday(): string {
   return useSyncExternalStore(noSubscription, todayIso, () => "");
 }
 
-/** Chat with the assistant on the left; the live preview and PDF download follow the fields it fills in. */
-export function DocumentCreator({ templates }: { templates: NdaTemplates }) {
+/**
+ * Chat with the assistant on the left. Once it has worked out which document the
+ * user needs, the live preview and PDF download follow the fields it fills in.
+ */
+export function DocumentCreator({ documents }: { documents: Record<string, DocumentInfo> }) {
   const chat = useConversation();
-  const fields = chat.fields ?? defaultFormData;
+  const doc = chat.document ? documents[chat.document] : null;
   const today = useToday();
-  // The fields keep the (possibly blank) chosen date; the document falls back to today.
   const markdown = useMemo(
-    () => buildNdaMarkdown(templates, { ...fields, effectiveDate: fields.effectiveDate || today }),
-    [templates, fields, today],
+    () => (doc && chat.fields ? buildDocumentMarkdown(doc, chat.fields, today) : ""),
+    [doc, chat.fields, today],
   );
 
   return (
@@ -41,10 +44,16 @@ export function DocumentCreator({ templates }: { templates: NdaTemplates }) {
           onRetry={chat.retry}
           onStartOver={chat.startOver}
         />
-        <DownloadButton markdown={markdown} />
+        {doc && <DownloadButton markdown={markdown} title={doc.name} filename={doc.filename} />}
       </div>
-      <section aria-label="Mutual NDA preview" className="min-w-0">
-        <DocumentPreview markdown={markdown} />
+      <section aria-label="Document preview" className="min-w-0">
+        {doc ? (
+          <DocumentPreview markdown={markdown} />
+        ) : (
+          <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm text-brand-gray">
+            Your agreement will appear here once you and the assistant have picked which one you need.
+          </p>
+        )}
       </section>
     </div>
   );

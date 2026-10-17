@@ -97,7 +97,7 @@ _router = Router(
          "litellm_params": {"model": "groq/openai/gpt-oss-120b",
                             "api_key": os.getenv("GROQ_API_KEY")}},
         {"model_name": "fallback",
-         "litellm_params": {"model": "openrouter/openai/gpt-oss-120b:free",
+         "litellm_params": {"model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
                             "api_key": os.getenv("OPENROUTER_API_KEY"),
                             "extra_body": {"provider": {"require_parameters": True}}}},
     ],

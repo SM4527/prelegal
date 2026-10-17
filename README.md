@@ -6,7 +6,8 @@ A platform for drafting common legal agreements
 ## Repository layout
 
 - `templates/`: Common Paper legal agreement templates (CC BY 4.0), listed in `catalog.json`.
-- `frontend/`: Next.js app, statically exported to `frontend/out/`. Features the Mutual NDA Creator, where an AI assistant fills in the agreement from a chat, plus sign-in and sign-up pages (placeholders).
+- `documents.json`: for each supported document, its party labels and the key terms the assistant collects. Read by the backend and the frontend build.
+- `frontend/`: Next.js app, statically exported to `frontend/out/`. Features the Legal Agreement Creator: an AI assistant works out which agreement the user needs and fills it in from a chat. Plus sign-in and sign-up pages (placeholders).
 - `backend/`: FastAPI app (uv project). Serves the API under `/api` (including the chat at `/api/conversations`) and the frontend build at `/`. Its SQLite database, which stores users and conversations, is recreated on every start.
 - `scripts/`: start and stop the Docker container.
 

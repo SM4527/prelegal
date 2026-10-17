@@ -15,21 +15,22 @@ _router = Router(
     model_list=[
         {
             "model_name": "primary",
-            "litellm_params": {"model": "groq/openai/gpt-oss-120b", "api_key": os.getenv("GROQ_API_KEY")},
+            "litellm_params": {"model": "groq/openai/gpt-oss-120b", "api_key": os.getenv("GROQ_API_KEY"), "timeout": 30},
         },
         {
             "model_name": "fallback",
+            # OpenRouter withdrew the free gpt-oss-120b; this free model is slower, hence the longer timeout.
             "litellm_params": {
-                "model": "openrouter/openai/gpt-oss-120b:free",
+                "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
                 "api_key": os.getenv("OPENROUTER_API_KEY"),
                 "extra_body": {"provider": {"require_parameters": True}},
+                "timeout": 60,
             },
         },
     ],
     fallbacks=[{"primary": ["fallback"]}],
     # The fallback is the retry, so a slow or failing Groq call doesn't keep the user waiting.
     num_retries=0,
-    timeout=30,
 )
 
 

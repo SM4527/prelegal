@@ -1,4 +1,4 @@
-import type { NdaFormData } from "./nda";
+import type { DocumentFields } from "./documents";
 
 export interface Credentials {
   email: string;
@@ -18,7 +18,9 @@ export interface ChatMessage {
 export interface Conversation {
   id: string;
   messages: ChatMessage[];
-  fields: NdaFormData;
+  /** The chosen document id, or null while the assistant works out which one the user needs. */
+  document: string | null;
+  fields: DocumentFields;
 }
 
 /** A non-2xx response from the backend, carrying FastAPI's `detail` message. */

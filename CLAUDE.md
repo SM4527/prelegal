@@ -12,7 +12,7 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-Current state: only the Mutual NDA document is supported, filled in through AI chat. See "Implementation status" below.
+Current state: every document in the catalog is supported, chosen and filled in through AI chat. See "Implementation status" below.
 
 ## Development process
 
@@ -24,7 +24,7 @@ When instructed to build a feature:
 
 ## AI design
 
-When writing code to make calls to LLMs, follow the `groq-llm` and `openrouter-llm` skills (in `.claude/skills/`) to use LiteLLM with Groq as the primary provider (`groq/openai/gpt-oss-120b`) and OpenRouter's free model (`openrouter/openai/gpt-oss-120b:free`) as the fallback when Groq is rate-limited or unavailable. Only use free models: never use a paid model or pin a paid inference provider such as Cerebras. You should use Structured Outputs so that you can interpret the results and populate fields in the legal document. The shared client is `backend/app/llm.py`; reuse it.
+When writing code to make calls to LLMs, follow the `groq-llm` and `openrouter-llm` skills (in `.claude/skills/`) to use LiteLLM with Groq as the primary provider (`groq/openai/gpt-oss-120b`) and OpenRouter's free model (`openrouter/nvidia/nemotron-3-super-120b-a12b:free`; the free gpt-oss-120b was withdrawn) as the fallback when Groq is rate-limited or unavailable. Only use free models: never use a paid model or pin a paid inference provider such as Cerebras. You should use Structured Outputs so that you can interpret the results and populate fields in the legal document. The shared client is `backend/app/llm.py`; reuse it.
 
 There is a GROQ_API_KEY and an OPENROUTER_API_KEY in the .env file in the project root.
 
@@ -74,4 +74,11 @@ These are Tailwind theme colors in `frontend/app/globals.css`: `brand-yellow`, `
   - Backend: `llm.py` (LiteLLM Router, Groq then OpenRouter fallback; one structured call per turn, no streaming, no re-ask), `nda.py` (camelCase Pydantic models matching `NdaFormData`, `Literal` years 1-10, system prompt), `conversations.py` (SQLite `conversations` and `messages`), `routers/chat.py` (`POST /api/conversations` with AI greeting, `GET /{id}`, `POST /{id}/messages`). A turn is stored only after the LLM call succeeds. Rate limit or other provider failure -> 503, invalid output -> 502. No retries (timeout 30s); the fallback is the retry.
   - Frontend: `lib/useConversation.ts` (id in `localStorage`, resume, retry, start over), `components/AssistantChat.tsx`, `ChatInput.tsx`. `NdaForm` was removed.
   - Tests mock the LLM (`app.llm._router.acompletion`; Playwright stubs `/api/conversations`). `uv run pytest -m integration` makes one live call.
-- **Next**: real auth in `routers/auth.py`, more document types.
+- **PL-6**: all catalog documents.
+  - `documents.json` (repo root) lists each document's template, party labels and curated key terms; names and descriptions come from `catalog.json`. Adding a document = template + catalog entry + documents.json entry. Docker copies both JSON files.
+  - Backend: `documents.py` (registry; per-document Pydantic schemas built with `create_model`; `turn_model(document)` has no fields but the parties until a document is chosen), `prompts.py` (catalog list, choosing vs drafting rules). `conversations` gained a `document` column. Switching documents keeps the parties and resets the rest. Blank = not given yet; "N/A" = does not apply.
+  - The prompt must tell the model to always answer with a JSON object: without it, Groq's gpt-oss sometimes answered unsupported requests in plain text (`json_validate_failed`).
+  - The Mutual NDA keeps its official Cover Page; other documents get a generated Cover Page (key terms and signatures) before their Standard Terms (`frontend/lib/documents.ts`). Templates are embedded at build time; line endings are normalised to LF.
+  - Components were renamed to `DocumentCreator`, `DocumentPreview`, `DocumentPdf`, `AssistantChat`. The message box keeps focus after sending and when replies arrive.
+  - Groq free tier allows about 8,000 tokens a minute (a turn is about 1.5k), so space out live tests; `uv run pytest -m integration` runs three paced scenarios.
+- **Next**: real auth in `routers/auth.py`.

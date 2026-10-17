@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-/** Generates the NDA PDF in the browser and saves it. The PDF library is loaded on first click. */
-export function DownloadButton({ markdown }: { markdown: string }) {
+/** Generates the document's PDF in the browser and saves it. The PDF library is loaded on first click. */
+export function DownloadButton({ markdown, title, filename }: { markdown: string; title: string; filename: string }) {
   const [status, setStatus] = useState<"idle" | "working" | "error">("idle");
   const working = status === "working";
 
@@ -15,17 +15,17 @@ export function DownloadButton({ markdown }: { markdown: string }) {
         import("@react-pdf/renderer"),
         import("./DocumentPdf"),
       ]);
-      const blob = await pdf(<DocumentPdf markdown={markdown} />).toBlob();
+      const blob = await pdf(<DocumentPdf markdown={markdown} title={title} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "Mutual-NDA.pdf";
+      link.download = filename;
       link.click();
       // Revoking immediately can cancel the download in some browsers.
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       setStatus("idle");
     } catch (error) {
-      console.error("Failed to generate NDA PDF", error);
+      console.error("Failed to generate the PDF", error);
       setStatus("error");
     }
   }

@@ -112,10 +112,10 @@ function renderBlock(node: Nodes, key: number): ReactNode {
   }
 }
 
-export function DocumentPdf({ markdown }: { markdown: string }) {
+export function DocumentPdf({ markdown, title }: { markdown: string; title: string }) {
   const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown) as Root;
   return (
-    <Document title="Mutual Non-Disclosure Agreement" creator="Prelegal">
+    <Document title={title} creator="Prelegal">
       <Page size="LETTER" style={styles.page}>
         {tree.children.map(renderBlock)}
       </Page>

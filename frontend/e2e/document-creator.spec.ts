@@ -2,24 +2,35 @@ import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { extractText, getDocumentProxy } from "unpdf";
 import type { Conversation } from "../lib/api";
+import type { DocumentFields } from "../lib/documents";
 import { defaultFormData, type NdaFormData } from "../lib/nda";
 
-const GREETING = "Hi! I'll help you draft a Mutual NDA. Who are the two parties?";
+const GREETING = "Hi! I can draft NDAs, cloud service agreements and more. What do you need?";
+const emptyParty = { name: "", title: "", company: "", noticeAddress: "" };
+const NDA_FIELDS = defaultFormData as unknown as DocumentFields;
 
-/** A scripted assistant reply: the fields it records, or an error response. */
-type Turn = { reply: string; fields?: Partial<NdaFormData> } | { status: number; detail: string };
+/** A scripted assistant reply: the document it chooses and the fields it records, or an error response. */
+type Turn =
+  | { reply: string; document?: string; fields?: Partial<NdaFormData> | Record<string, unknown> }
+  | { status: number; detail: string };
 
 /**
  * Stubs the chat API with an in-memory backend so no LLM is called: each sent
- * message gets the next scripted turn. Then opens the page and waits for the greeting.
+ * message gets the next scripted turn. Conversations start on `document`
+ * (the Mutual NDA unless null). Then opens the page and waits for the greeting.
  */
-async function openWithChat(page: Page, turns: Turn[] = []) {
+async function openWithChat(page: Page, turns: Turn[] = [], document: string | null = "mutual-nda") {
   const conversations = new Map<string, Conversation>();
   await page.route("**/api/conversations**", async (route) => {
     const request = route.request();
     const [, , id] = new URL(request.url()).pathname.split("/").filter(Boolean);
     if (!id) {
-      const created = { id: `c${conversations.size + 1}`, messages: [{ role: "assistant" as const, content: GREETING }], fields: defaultFormData };
+      const created: Conversation = {
+        id: `c${conversations.size + 1}`,
+        messages: [{ role: "assistant", content: GREETING }],
+        document,
+        fields: document ? NDA_FIELDS : { party1: emptyParty, party2: emptyParty },
+      };
       conversations.set(created.id, created);
       return route.fulfill({ status: 201, json: created });
     }
@@ -34,7 +45,8 @@ async function openWithChat(page: Page, turns: Turn[] = []) {
       { role: "user", content: request.postDataJSON().content },
       { role: "assistant", content: turn.reply },
     ];
-    conversation.fields = { ...conversation.fields, ...turn.fields };
+    conversation.document = turn.document ?? conversation.document;
+    conversation.fields = { ...conversation.fields, ...turn.fields } as DocumentFields;
     return route.fulfill({ json: conversation });
   });
   await page.goto("/");
@@ -70,15 +82,15 @@ async function downloadPdf(page: Page) {
   return { filename: download.suggestedFilename(), header: buffer.subarray(0, 5).toString(), text: text.replace(/\s+/g, " ") };
 }
 
-const preview = (page: Page) => page.getByRole("region", { name: "Mutual NDA preview" });
+const preview = (page: Page) => page.getByRole("region", { name: "Document preview" });
 const chatLog = (page: Page) => page.getByRole("log", { name: "Conversation" });
 
 test("loads the creator with the assistant's greeting, the full agreement and no errors", async ({ page }) => {
   const errors = trackErrors(page);
   await openWithChat(page);
 
-  await expect(page).toHaveTitle("Mutual NDA Creator | Prelegal");
-  await expect(page.getByRole("heading", { level: 1, name: "Mutual NDA Creator" })).toBeVisible();
+  await expect(page).toHaveTitle("Legal Agreement Creator | Prelegal");
+  await expect(page.getByRole("heading", { level: 1, name: "Legal Agreement Creator" })).toBeVisible();
   await expect(preview(page).getByRole("heading", { name: "Mutual Non-Disclosure Agreement", exact: true })).toBeVisible();
   await expect(preview(page).getByRole("heading", { name: "Standard Terms" })).toBeAttached();
   await expect(preview(page)).toContainText("Governing Law: [Governing Law]");
@@ -243,6 +255,79 @@ test("shows chat messages and field values literally", async ({ page }) => {
 
   await expect(preview(page)).toContainText(hostile);
   await expect(page.locator("main img, main em, main a[href^='javascript']")).toHaveCount(0);
+});
+
+test("works out the document in the chat, then drafts and downloads it", async ({ page }) => {
+  const errors = trackErrors(page);
+  await openWithChat(
+    page,
+    [
+      { reply: "Leases aren't one of our agreements yet. Would a Pilot Agreement fit?" },
+      {
+        reply: "A Cloud Service Agreement it is. What is the Cloud Service?",
+        document: "csa",
+        fields: {
+          party1: { ...emptyParty, company: "Acme Inc." }, party2: { ...emptyParty, company: "Globex LLC" },
+          ...Object.fromEntries(["cloudService", "orderDate", "effectiveDate", "subscriptionPeriod", "nonRenewalNoticeDate",
+            "fees", "technicalSupport", "generalCapAmount", "governingLaw", "chosenCourts"].map((k) => [k, ""])),
+        },
+      },
+      { reply: "Noted. What is the Order Date?", fields: { cloudService: "Acme Analytics", fees: "$2,000 per month", technicalSupport: "N/A" } },
+    ],
+    null,
+  );
+  await expect(preview(page)).toContainText("Your agreement will appear here");
+  await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
+
+  await say(page, "I need a residential lease", "Leases aren't one of our agreements yet. Would a Pilot Agreement fit?");
+  await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
+
+  await say(page, "No, a cloud service agreement between Acme and Globex", "A Cloud Service Agreement it is. What is the Cloud Service?");
+  await expect(preview(page).getByRole("heading", { name: "Cloud Service Agreement Cover Page" })).toBeVisible();
+  await expect(preview(page).getByRole("columnheader", { name: "Provider" })).toBeVisible();
+
+  await say(page, "Acme Analytics, $2,000 a month, no support", "Noted. What is the Order Date?");
+  const pdf = await downloadPdf(page);
+  expect(pdf.filename).toBe("CSA.pdf");
+  for (const expected of [
+    "Cloud Service Agreement Cover Page",
+    "Cloud Service Acme Analytics",
+    "Fees $2,000 per month",
+    "Technical Support N/A",
+    "Order Date [Order Date]",
+    "Company Acme Inc. Globex LLC",
+    "Cloud Service Agreement 1.",
+  ]) {
+    expect(pdf.text).toContain(expected);
+  }
+  expect(errors).toEqual([]);
+});
+
+test("switches documents, keeping the parties", async ({ page }) => {
+  await openWithChat(page, [
+    { reply: "Noted.", fields: { party1: { ...emptyParty, company: "Acme Inc." } } },
+    {
+      reply: "Switched to a Pilot Agreement. How long is the pilot?",
+      document: "pilot",
+      fields: { pilotPeriod: "", product: "", fees: "", generalCapAmount: "", governingLaw: "", chosenCourts: "", effectiveDate: "" },
+    },
+  ]);
+  await say(page, "Acme is party 1", "Noted.");
+
+  await say(page, "Actually make it a pilot", "Switched to a Pilot Agreement. How long is the pilot?");
+
+  await expect(preview(page).getByRole("heading", { name: "Pilot Agreement Cover Page" })).toBeVisible();
+  await expect(preview(page)).toContainText("Acme Inc.");
+});
+
+test("keeps focus in the message box after clicking Send", async ({ page }) => {
+  await openWithChat(page, [{ reply: "Delaware it is.", fields: { governingLaw: "Delaware" } }]);
+  const box = page.getByRole("textbox", { name: "Message" });
+  await expect(box).toBeFocused();
+
+  await say(page, "Delaware law", "Delaware it is.");
+
+  await expect(box).toBeFocused();
 });
 
 test("fits the viewport without horizontal scrolling", async ({ page }) => {

@@ -1,11 +1,19 @@
 "use client";
 
-import { useId, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
-/** Message box and Send button. Enter sends; Shift+Enter starts a new line. */
+/**
+ * Message box and Send button. Enter sends; Shift+Enter starts a new line. Focus stays in the
+ * message box: after sending, and whenever it becomes usable again (e.g. when a reply arrives).
+ */
 export function ChatInput({ disabled, onSend }: { disabled: boolean; onSend: (text: string) => void }) {
   const id = useId();
   const [text, setText] = useState("");
+  const box = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!disabled) box.current!.focus();
+  }, [disabled]);
 
   function submit(event?: FormEvent) {
     event?.preventDefault();
@@ -13,6 +21,7 @@ export function ChatInput({ disabled, onSend }: { disabled: boolean; onSend: (te
     if (disabled || !message) return;
     onSend(message);
     setText("");
+    box.current!.focus();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -26,6 +35,7 @@ export function ChatInput({ disabled, onSend }: { disabled: boolean; onSend: (te
     <form onSubmit={submit} className="flex items-end gap-2">
       <label htmlFor={id} className="sr-only">Message</label>
       <textarea
+        ref={box}
         id={id}
         rows={2}
         value={text}
