@@ -1,7 +1,7 @@
 # prelegal
 A platform for drafting common legal agreements
 
-> **Status: In progress.** This project is under active development and is expected to be completed by **October 20, 2026**.
+> **Disclaimer:** Documents drafted with Prelegal are drafts only. It is not legal advice and should be reviewed by a qualified lawyer or attorney.
 
 ## Repository layout
 
