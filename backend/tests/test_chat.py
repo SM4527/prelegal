@@ -246,6 +246,14 @@ def test_signed_out_conversations_open_for_anyone_with_the_id(client, fake_llm):
     assert client.get(f"/api/conversations/{conversation_id}").status_code == 200
 
 
+def test_signed_out_draft_is_unaffected_by_another_user_signing_in(client, fake_llm):
+    conversation_id = start(client)["id"]
+    sign_up(client, "a@example.com")
+    client.post("/api/auth/signout")
+
+    assert client.get(f"/api/conversations/{conversation_id}").status_code == 200
+
+
 def test_a_users_conversation_is_hidden_from_others(client, fake_llm):
     sign_up(client, "a@example.com")
     conversation_id = drafting(client, fake_llm, "csa")

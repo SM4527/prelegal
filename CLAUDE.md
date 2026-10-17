@@ -12,7 +12,7 @@ The available documents are covered in the catalog.json file in the project root
 
 @catalog.json
 
-Current state: every document in the catalog is supported, chosen and filled in through AI chat. See "Implementation status" below.
+Current state: every document in the catalog is supported, chosen and filled in through AI chat. Users can optionally sign up to save their documents and reopen them from My documents. See "Implementation status" below.
 
 ## Development process
 
@@ -33,7 +33,7 @@ There is a GROQ_API_KEY and an OPENROUTER_API_KEY in the .env file in the projec
 The entire project should be packaged into a Docker container.  
 The backend should be in backend/ and be a uv project, using FastAPI.  
 The frontend should be in frontend/  
-The database should use SQLite and be created from scratch each time the Docker container is brought up, with a users table for sign up and sign in (placeholders for now) and the chat conversations.  
+The database should use SQLite and be created from scratch each time the Docker container is brought up, with users, sessions and the chat conversations.  
 The frontend is statically exported (`frontend/out/`) and served by FastAPI.  
 There should be scripts in scripts/ for:  
 ```bash
@@ -67,7 +67,7 @@ These are Tailwind theme colors in `frontend/app/globals.css`: `brand-yellow`, `
 - **PL-4**: V1 foundation (PR #5).
   - Frontend: `output: "export"` with `trailingSlash: true`. `cacheComponents`/`partialPrefetching` must stay off: they enable PPR, which breaks static export.
   - Backend: `backend/app/` with `main.py` (API under `/api`, static mount at `/` last), `db.py` (SQLite recreated on every start; `DB_PATH`, `STATIC_DIR` env overrides), `routers/health.py`, `routers/auth.py`.
-  - Auth is a placeholder: `/api/auth/{signup,signin,signout,me}` return 501; `/signin/` and `/signup/` pages call them via `frontend/lib/api.ts`.
+  - Auth started as a placeholder (501); made real in PL-7.
   - Docker: multi-stage `Dockerfile`, `docker-compose.yml` (port 8000, `.env` optional); scripts wrap `docker compose up -d --build` / `down`.
   - Tests: `uv run pytest` (backend), `npm test` (Vitest), `npm run test:e2e` (Playwright against FastAPI serving the build on port 3100).
 - **PL-5**: AI chat replaces the NDA form (PR #6).
@@ -83,4 +83,9 @@ These are Tailwind theme colors in `frontend/app/globals.css`: `brand-yellow`, `
   - The OpenRouter fallback is `nvidia/nemotron-3-super-120b-a12b:free` (the free gpt-oss-120b was withdrawn in October 2026); it is slower than Groq (about 10-30s a turn).
   - The DPA's deeply indented lettered clauses parse as a markdown code block; the PDF and preview render code blocks as plain text so they are not lost.
   - Groq free tier allows about 8,000 tokens a minute (a turn is about 1.5k), so space out live tests; `uv run pytest -m integration` runs three paced scenarios.
-- **Next**: real auth in `routers/auth.py`.
+- **PL-7**: accounts, My documents, polish and disclaimer.
+  - Sign-in is optional but encouraged. `app/auth.py`: stdlib scrypt hashes, a `sessions` table, an HttpOnly `session` cookie (SameSite=lax), and the `OptionalUser`/`CurrentUser` dependencies. `/api/auth`: signup (201; 409 taken email, 422 password under 8), signin (401), signout (204), me (null when signed out, so anonymous pages log no 401s).
+  - `conversations.user_id` is nullable: an anonymous conversation opens for anyone with its id; an owned one is 404 for everyone else. A signed-in user who opens an unowned conversation claims it, so a draft started before signing in is saved. `GET /api/conversations` (sign-in required) lists the user's conversations with a document, newest `updated_at` (ms precision) first, with `documentName` and party labels.
+  - Frontend: `lib/user.tsx` (`UserProvider` in the layout calls `/me` once per page load), `AppHeader`, `/documents/` (`DocumentHistory`), `AuthPage`. `useConversation` opens `/?c=<id>` or starts fresh on `/?new`, then tidies the URL; otherwise it resumes from `localStorage`. Sign-in, sign-out and these links are full page loads (`lib/navigate.ts`; `no-html-link-for-pages` is off), so the user and conversation are read afresh.
+  - Shared Tailwind classes live in `lib/ui.ts`. The draft disclaimer (`lib/disclaimer.ts`) shows above the preview, under Download, at the foot of every PDF page, and in the site footer.
+- **Next**: to be decided.

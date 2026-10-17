@@ -3,7 +3,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { ApiError, auth } from "@/lib/api";
 import { navigate } from "@/lib/navigate";
-import { buttonPrimary, errorClass, inputClass, labelClass } from "@/lib/ui";
+import { buttonPrimary, errorClass, inputClass, labelClass, linkClass } from "@/lib/ui";
 
 type Mode = "signin" | "signup";
 
@@ -72,7 +72,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       {error && <p role="alert" className={errorClass}>{error}</p>}
       <p className="text-center text-sm text-slate-600">
         {copy.switchText}{" "}
-        <a href={copy.switchHref} className="font-semibold text-brand-blue hover:underline">{copy.switchLabel}</a>
+        <a href={copy.switchHref} className={linkClass}>{copy.switchLabel}</a>
       </p>
     </form>
   );

@@ -1,12 +1,10 @@
 """Auth API: sign up, sign in and out with an HttpOnly session cookie, and who is signed in."""
 
-from typing import Annotated
-
-from fastapi import APIRouter, Cookie, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 from app import auth
-from app.auth import SESSION_COOKIE, OptionalUser, User
+from app.auth import SESSION_COOKIE, OptionalUser, SessionToken, User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -45,7 +43,7 @@ def signin(credentials: Credentials, response: Response) -> User:
 
 
 @router.post("/signout", status_code=status.HTTP_204_NO_CONTENT)
-def signout(response: Response, session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None) -> None:
+def signout(response: Response, session: SessionToken = None) -> None:
     """End the session, if any, and clear its cookie."""
     if session:
         auth.delete_session(session)

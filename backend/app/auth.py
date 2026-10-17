@@ -20,17 +20,22 @@ class User(BaseModel):
     email: str
 
 
+SessionToken = Annotated[str | None, Cookie(alias=SESSION_COOKIE)]
+
+
+def _scrypt(password: str, salt: bytes) -> str:
+    return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1).hex()
+
+
 def hash_password(password: str) -> str:
     """A salted scrypt hash, stored as "salt$key" in hex."""
     salt = secrets.token_bytes(16)
-    key = hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1)
-    return f"{salt.hex()}${key.hex()}"
+    return f"{salt.hex()}${_scrypt(password, salt)}"
 
 
 def verify_password(password: str, stored: str) -> bool:
     salt, key = stored.split("$")
-    candidate = hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=2**14, r=8, p=1)
-    return hmac.compare_digest(candidate.hex(), key)
+    return hmac.compare_digest(_scrypt(password, bytes.fromhex(salt)), key)
 
 
 def _normalise(email: str) -> str:
@@ -73,7 +78,7 @@ def delete_session(token: str) -> None:
         conn.execute("DELETE FROM sessions WHERE token = ?", (token,))
 
 
-def optional_user(session: Annotated[str | None, Cookie(alias=SESSION_COOKIE)] = None) -> User | None:
+def optional_user(session: SessionToken = None) -> User | None:
     """The signed-in user, or None when signed out."""
     if session is None:
         return None

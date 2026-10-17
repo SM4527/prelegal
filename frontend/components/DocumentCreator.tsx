@@ -3,7 +3,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { buildDocumentMarkdown, type DocumentInfo } from "@/lib/documents";
 import { todayIso } from "@/lib/nda";
-import { cardClass } from "@/lib/ui";
+import { cardClass, linkClass } from "@/lib/ui";
 import { useConversation } from "@/lib/useConversation";
 import { useUser } from "@/lib/user";
 import { AssistantChat } from "./AssistantChat";
@@ -26,8 +26,8 @@ function useToday(): string {
 function SaveNotice() {
   return (
     <p className={`${cardClass} px-4 py-3 text-sm text-slate-600`}>
-      <a href="/signin/" className="font-semibold text-brand-blue hover:underline">Sign in</a> or{" "}
-      <a href="/signup/" className="font-semibold text-brand-blue hover:underline">create an account</a> to save
+      <a href="/signin/" className={linkClass}>Sign in</a> or{" "}
+      <a href="/signup/" className={linkClass}>create an account</a> to save
       this document and come back to it later.
     </p>
   );

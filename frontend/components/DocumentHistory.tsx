@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { chat, type ConversationSummary } from "@/lib/api";
-import { buttonPrimary, buttonSecondary, cardClass, errorClass } from "@/lib/ui";
+import { buttonPrimary, buttonSecondary, cardClass, errorClass, focusRing } from "@/lib/ui";
 import { useUser } from "@/lib/user";
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -22,7 +22,7 @@ function DocumentCard({ summary }: { summary: ConversationSummary }) {
     <li>
       <a
         href={`/?c=${summary.id}`}
-        className={`${cardClass} flex h-full flex-col gap-2 p-5 transition hover:border-brand-blue hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue`}
+        className={`${cardClass} flex h-full flex-col gap-2 p-5 transition hover:border-brand-blue hover:shadow-md ${focusRing}`}
       >
         <span className="font-semibold text-brand-navy">{summary.documentName}</span>
         <span className="text-sm text-slate-600">{summary.parties.join(" and ") || "Parties not named yet"}</span>

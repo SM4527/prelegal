@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.parametrize(
     ("path", "title"),
-    [("/", "Home"), ("/signin/", "Sign in"), ("/signup/", "Sign up")],
+    [("/", "Home"), ("/signin/", "Sign in"), ("/signup/", "Sign up"), ("/documents/", "My documents")],
 )
 def test_serves_frontend_pages(client, path, title):
     response = client.get(path)

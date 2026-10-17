@@ -18,9 +18,14 @@ function errorText(error: unknown): string {
  */
 async function resumeOrCreate(): Promise<Conversation> {
   const params = new URLSearchParams(window.location.search);
-  if (params.size) window.history.replaceState(null, "", window.location.pathname);
   const id = params.has("new") ? null : (params.get("c") ?? localStorage.getItem(STORAGE_KEY));
-  if (!id) return chat.create();
+  const conversation = id ? await openOrCreate(id) : await chat.create();
+  // Tidied only once loaded, so React's development double run of the effect reads the same URL.
+  window.history.replaceState(null, "", window.location.pathname);
+  return conversation;
+}
+
+async function openOrCreate(id: string): Promise<Conversation> {
   try {
     return await chat.get(id);
   } catch (error) {
