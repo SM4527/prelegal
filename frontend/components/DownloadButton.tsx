@@ -11,11 +11,11 @@ export function DownloadButton({ markdown }: { markdown: string }) {
     if (working) return;
     setStatus("working");
     try {
-      const [{ pdf }, { NdaPdfDocument }] = await Promise.all([
+      const [{ pdf }, { DocumentPdf }] = await Promise.all([
         import("@react-pdf/renderer"),
-        import("./NdaPdf"),
+        import("./DocumentPdf"),
       ]);
-      const blob = await pdf(<NdaPdfDocument markdown={markdown} />).toBlob();
+      const blob = await pdf(<DocumentPdf markdown={markdown} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

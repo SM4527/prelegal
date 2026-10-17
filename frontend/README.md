@@ -38,10 +38,10 @@ Notes:
   - User input is markdown-escaped, so it always displays literally.
   - Filling throws an error if the template text changes in a way it no longer recognizes.
 - **`lib/useConversation.ts`**: starts or resumes the chat (the id is kept in `localStorage`), sends messages, and handles errors, retry and start over.
-- **`components/NdaCreator.tsx`**: shows the chat and builds the markdown for the preview and download from the fields the assistant has filled in.
-- **`components/NdaChat.tsx`** and **`ChatInput.tsx`**: the message history, typing indicator, errors with Retry, and the message box (Enter sends, Shift+Enter adds a line).
-- **`components/NdaPreview.tsx`**: renders the markdown with `react-markdown` and `remark-gfm`. Raw HTML is not rendered.
-- **`components/NdaPdf.tsx`**: parses the same markdown and maps it to `@react-pdf/renderer` primitives. The Standard Terms start on a new page.
+- **`components/DocumentCreator.tsx`**: shows the chat and builds the markdown for the preview and download from the fields the assistant has filled in.
+- **`components/AssistantChat.tsx`** and **`ChatInput.tsx`**: the message history, typing indicator, errors with Retry, and the message box (Enter sends, Shift+Enter adds a line).
+- **`components/DocumentPreview.tsx`**: renders the markdown with `react-markdown` and `remark-gfm`. Raw HTML is not rendered.
+- **`components/DocumentPdf.tsx`**: parses the same markdown and maps it to `@react-pdf/renderer` primitives. The Standard Terms start on a new page.
 - **`components/DownloadButton.tsx`**: loads the PDF library only when the user clicks it, then saves `Mutual-NDA.pdf`.
 
 The signature and date cells in the PDF are left blank, to be signed by hand or through an e-signature tool.

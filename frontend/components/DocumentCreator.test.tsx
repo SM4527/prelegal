@@ -6,7 +6,7 @@ import type { ChatMessage, Conversation } from "@/lib/api";
 import { defaultFormData, type NdaFormData } from "@/lib/nda";
 import { loadNdaTemplates } from "@/lib/templates";
 import { STORAGE_KEY } from "@/lib/useConversation";
-import { NdaCreator } from "./NdaCreator";
+import { DocumentCreator } from "./DocumentCreator";
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), send: vi.fn() }));
 vi.mock("@/lib/api", async (importOriginal) => ({
@@ -29,7 +29,7 @@ function afterTurn(text: string, reply: string, fields: Partial<NdaFormData> = {
 
 async function setup() {
   const user = userEvent.setup();
-  render(<NdaCreator templates={templates} />);
+  render(<DocumentCreator templates={templates} />);
   const preview = screen.getByRole("region", { name: "Mutual NDA preview" });
   const log = screen.getByRole("log", { name: "Conversation" });
   await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeEnabled());
@@ -69,7 +69,7 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-describe("NdaCreator", () => {
+describe("DocumentCreator", () => {
   it("starts a conversation with the assistant's greeting and remembers it", async () => {
     const { log } = await setup();
     expect(within(log).getByText(GREETING.content)).toBeInTheDocument();
@@ -227,7 +227,7 @@ describe("NdaCreator", () => {
       .mockRejectedValueOnce(new ApiError(503, "The assistant is busy, please try again in a minute."))
       .mockResolvedValueOnce(conversation());
     const user = userEvent.setup();
-    render(<NdaCreator templates={templates} />);
+    render(<DocumentCreator templates={templates} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The assistant is busy");
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();

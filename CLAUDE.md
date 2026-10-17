@@ -72,6 +72,6 @@ These are Tailwind theme colors in `frontend/app/globals.css`: `brand-yellow`, `
   - Tests: `uv run pytest` (backend), `npm test` (Vitest), `npm run test:e2e` (Playwright against FastAPI serving the build on port 3100).
 - **PL-5**: AI chat replaces the NDA form (PR #6).
   - Backend: `llm.py` (LiteLLM Router, Groq then OpenRouter fallback; one structured call per turn, no streaming, no re-ask), `nda.py` (camelCase Pydantic models matching `NdaFormData`, `Literal` years 1-10, system prompt), `conversations.py` (SQLite `conversations` and `messages`), `routers/chat.py` (`POST /api/conversations` with AI greeting, `GET /{id}`, `POST /{id}/messages`). A turn is stored only after the LLM call succeeds. Rate limit or other provider failure -> 503, invalid output -> 502. No retries (timeout 30s); the fallback is the retry.
-  - Frontend: `lib/useConversation.ts` (id in `localStorage`, resume, retry, start over), `components/NdaChat.tsx`, `ChatInput.tsx`. `NdaForm` was removed.
+  - Frontend: `lib/useConversation.ts` (id in `localStorage`, resume, retry, start over), `components/AssistantChat.tsx`, `ChatInput.tsx`. `NdaForm` was removed.
   - Tests mock the LLM (`app.llm._router.acompletion`; Playwright stubs `/api/conversations`). `uv run pytest -m integration` makes one live call.
 - **Next**: real auth in `routers/auth.py`, more document types.

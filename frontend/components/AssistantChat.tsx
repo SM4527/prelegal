@@ -5,7 +5,7 @@ import type { ChatMessage } from "@/lib/api";
 import type { ChatStatus } from "@/lib/useConversation";
 import { ChatInput } from "./ChatInput";
 
-interface NdaChatProps {
+interface AssistantChatProps {
   messages: ChatMessage[];
   pending: string;
   status: ChatStatus;
@@ -30,7 +30,7 @@ function Bubble({ role, content }: ChatMessage) {
 }
 
 /** The conversation with the NDA assistant: message history, status, errors and the message box. */
-export function NdaChat({ messages, pending, status, error, onSend, onRetry, onStartOver }: NdaChatProps) {
+export function AssistantChat({ messages, pending, status, error, onSend, onRetry, onStartOver }: AssistantChatProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const busy = status !== "idle";
 

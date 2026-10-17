@@ -8,7 +8,7 @@ import { DownloadButton } from "./DownloadButton";
 const mocks = vi.hoisted(() => ({ toBlob: vi.fn(), pdf: vi.fn() }));
 const { toBlob } = mocks;
 vi.mock("@react-pdf/renderer", () => ({ pdf: mocks.pdf }));
-vi.mock("./NdaPdf", () => ({ NdaPdfDocument: () => null }));
+vi.mock("./DocumentPdf", () => ({ DocumentPdf: () => null }));
 
 let linkClicks: ReturnType<typeof vi.spyOn>;
 /** The <a> element the download clicked, if any. */

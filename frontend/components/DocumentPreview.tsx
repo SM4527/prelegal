@@ -19,9 +19,9 @@ function domProps<P extends { node?: unknown }>({ node, ...props }: P): Omit<P, 
 }
 
 /** Renders the filled NDA markdown as a paper-style document. Raw HTML is not rendered. */
-export function NdaPreview({ markdown }: { markdown: string }) {
+export function DocumentPreview({ markdown }: { markdown: string }) {
   return (
-    <article className="nda-document">
+    <article className="legal-document">
       <Markdown remarkPlugins={[remarkGfm]} components={components}>
         {markdown}
       </Markdown>

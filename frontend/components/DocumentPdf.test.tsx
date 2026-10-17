@@ -3,14 +3,14 @@ import { extractText, getDocumentProxy } from "unpdf";
 import { describe, expect, it } from "vitest";
 import { buildNdaMarkdown, defaultFormData, type NdaFormData } from "@/lib/nda";
 import { loadNdaTemplates } from "@/lib/templates";
-import { NdaPdfDocument } from "./NdaPdf";
+import { DocumentPdf } from "./DocumentPdf";
 
 const templates = loadNdaTemplates();
 
 /** Renders the NDA for the given form data and returns the text of each PDF page. */
 async function renderPages(overrides: Partial<NdaFormData> = {}): Promise<string[]> {
   const markdown = buildNdaMarkdown(templates, { ...defaultFormData, effectiveDate: "2026-10-13", ...overrides });
-  const buffer = await renderToBuffer(<NdaPdfDocument markdown={markdown} />);
+  const buffer = await renderToBuffer(<DocumentPdf markdown={markdown} />);
   expect(buffer.subarray(0, 5).toString()).toBe("%PDF-");
   const { text } = await extractText(await getDocumentProxy(new Uint8Array(buffer)), { mergePages: false });
   return text;
@@ -18,7 +18,7 @@ async function renderPages(overrides: Partial<NdaFormData> = {}): Promise<string
 
 const squash = (text: string) => text.replace(/\s+/g, " ");
 
-describe("NdaPdfDocument", () => {
+describe("DocumentPdf", () => {
   it("renders the filled Cover Page and the Standard Terms on a new page", async () => {
     const pages = await renderPages({
       purpose: "Exploring a joint venture.",

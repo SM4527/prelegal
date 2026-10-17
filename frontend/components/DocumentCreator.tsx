@@ -4,8 +4,8 @@ import { useMemo, useSyncExternalStore } from "react";
 import { buildNdaMarkdown, defaultFormData, todayIso, type NdaTemplates } from "@/lib/nda";
 import { useConversation } from "@/lib/useConversation";
 import { DownloadButton } from "./DownloadButton";
-import { NdaChat } from "./NdaChat";
-import { NdaPreview } from "./NdaPreview";
+import { AssistantChat } from "./AssistantChat";
+import { DocumentPreview } from "./DocumentPreview";
 
 const noSubscription = () => () => {};
 
@@ -19,7 +19,7 @@ function useToday(): string {
 }
 
 /** Chat with the assistant on the left; the live preview and PDF download follow the fields it fills in. */
-export function NdaCreator({ templates }: { templates: NdaTemplates }) {
+export function DocumentCreator({ templates }: { templates: NdaTemplates }) {
   const chat = useConversation();
   const fields = chat.fields ?? defaultFormData;
   const today = useToday();
@@ -32,7 +32,7 @@ export function NdaCreator({ templates }: { templates: NdaTemplates }) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       <div className="flex flex-col gap-6 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:pr-2">
-        <NdaChat
+        <AssistantChat
           messages={chat.messages}
           pending={chat.pending}
           status={chat.status}
@@ -44,7 +44,7 @@ export function NdaCreator({ templates }: { templates: NdaTemplates }) {
         <DownloadButton markdown={markdown} />
       </div>
       <section aria-label="Mutual NDA preview" className="min-w-0">
-        <NdaPreview markdown={markdown} />
+        <DocumentPreview markdown={markdown} />
       </section>
     </div>
   );

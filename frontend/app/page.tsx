@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NdaCreator } from "@/components/NdaCreator";
+import { DocumentCreator } from "@/components/DocumentCreator";
 import { loadNdaTemplates } from "@/lib/templates";
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function Home() {
           Download the completed Mutual Non-Disclosure Agreement as a PDF when you&apos;re ready to sign.
         </p>
       </header>
-      <NdaCreator templates={templates} />
+      <DocumentCreator templates={templates} />
       <footer className="border-t border-zinc-200 pt-4 text-xs text-zinc-600">
         Based on the Common Paper Mutual NDA (Version 1.0), free to use under{" "}
         <a className="underline" href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.

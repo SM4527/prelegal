@@ -112,7 +112,7 @@ function renderBlock(node: Nodes, key: number): ReactNode {
   }
 }
 
-export function NdaPdfDocument({ markdown }: { markdown: string }) {
+export function DocumentPdf({ markdown }: { markdown: string }) {
   const tree = unified().use(remarkParse).use(remarkGfm).parse(markdown) as Root;
   return (
     <Document title="Mutual Non-Disclosure Agreement" creator="Prelegal">

@@ -28,7 +28,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Formats dates without timezone shifts.
 - Includes all 11 Standard Terms sections.
 
-**`components/NdaCreator.test.tsx`: the chat and live preview (component tests in jsdom, chat API mocked)**
+**`components/DocumentCreator.test.tsx`: the chat and live preview (component tests in jsdom, chat API mocked)**
 - Starts a conversation with the assistant's greeting and remembers its id; resumes it after a reload, or starts afresh if the backend no longer knows it.
 - Default document, with today's date while no date is chosen.
 - Sending a message shows it at once with a typing indicator, then the reply; the preview fills in from the returned fields (dates, both term styles, parties, multi-line modifications).
@@ -44,7 +44,7 @@ The end-to-end tests use the Chrome and Edge already installed on your machine. 
 - Passes the current markdown to the PDF document.
 - On failure, shows an error alert, and a retry works.
 
-**`components/NdaPdf.test.tsx`: PDF content (renders a real PDF and extracts its text)**
+**`components/DocumentPdf.test.tsx`: PDF content (renders a real PDF and extracts its text)**
 - All entered values and `[X]`/`[ ]` markers appear in the PDF.
 - The Standard Terms start on a new page.
 - Sections 1–11 are numbered in order.
