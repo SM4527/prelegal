@@ -1,6 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { extractText, getDocumentProxy } from "unpdf";
 import { describe, expect, it } from "vitest";
+import { DISCLAIMER } from "@/lib/disclaimer";
 import { buildDocumentMarkdown, type DocumentFields } from "@/lib/documents";
 import { buildNdaMarkdown, defaultFormData, type NdaFormData } from "@/lib/nda";
 import { loadDocuments, loadNdaTemplates } from "@/lib/templates";
@@ -27,6 +28,12 @@ async function renderPages(overrides: Partial<NdaFormData> = {}): Promise<string
 const squash = (text: string) => text.replace(/\s+/g, " ");
 
 describe("DocumentPdf", () => {
+  it("puts the draft disclaimer at the foot of every page", async () => {
+    const pages = await renderPages();
+    expect(pages.length).toBeGreaterThan(1);
+    for (const page of pages) expect(squash(page)).toContain(DISCLAIMER);
+  });
+
   it("renders a generated Cover Page with its tables, then the Standard Terms on a new page, under the given title", async () => {
     const fields: DocumentFields = {
       party1: { name: "Ada Lovelace", title: "CEO", company: "Acme Inc.", noticeAddress: "ada@acme.test" },

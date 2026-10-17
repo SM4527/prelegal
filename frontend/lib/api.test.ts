@@ -28,9 +28,10 @@ describe("auth API client", () => {
     });
   });
 
-  it("signout posts to /api/auth/signout", async () => {
-    const fetchMock = mockFetch(200, null);
-    await auth.signout();
+  it("signout posts to /api/auth/signout and accepts its empty 204 response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(auth.signout()).resolves.toBeUndefined();
     expect(fetchMock.mock.calls[0][0]).toBe("/api/auth/signout");
     expect(fetchMock.mock.calls[0][1].method).toBe("POST");
   });
@@ -43,12 +44,12 @@ describe("auth API client", () => {
   });
 
   it("throws an ApiError with the status and FastAPI detail on failure", async () => {
-    mockFetch(501, { detail: "Accounts are not available yet." });
+    mockFetch(401, { detail: "Incorrect email or password." });
 
     const error = await auth.signin(credentials).catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status: 501, message: "Accounts are not available yet." });
+    expect(error).toMatchObject({ status: 401, message: "Incorrect email or password." });
   });
 
   it.each([
@@ -67,6 +68,13 @@ describe("auth API client", () => {
 
 describe("chat API client", () => {
   const conversation = { id: "c1", messages: [], fields: {} };
+
+  it("list gets the signed-in user's documents", async () => {
+    const fetchMock = mockFetch(200, []);
+    await expect(chat.list()).resolves.toEqual([]);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/conversations");
+    expect(fetchMock.mock.calls[0][1].method).toBeUndefined();
+  });
 
   it("create posts to /api/conversations", async () => {
     const fetchMock = mockFetch(201, conversation);

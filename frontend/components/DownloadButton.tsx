@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buttonPrimary, errorClass } from "@/lib/ui";
 
 /** Generates the document's PDF in the browser and saves it. The PDF library is loaded on first click. */
 export function DownloadButton({ markdown, title, filename }: { markdown: string; title: string; filename: string }) {
@@ -37,15 +38,16 @@ export function DownloadButton({ markdown, title, filename }: { markdown: string
         type="button"
         onClick={download}
         aria-disabled={working}
-        className="rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 aria-disabled:cursor-wait aria-disabled:opacity-60"
+        className={`${buttonPrimary} w-full`}
       >
         {working ? "Preparing PDF…" : "Download PDF"}
       </button>
+      <p className="text-center text-xs text-slate-500">A draft for review by a lawyer before signing.</p>
       <p aria-live="polite" className="sr-only">
         {working ? "Preparing PDF" : ""}
       </p>
       {status === "error" && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className={errorClass}>
           Sorry, the PDF could not be generated. Please try again.
         </p>
       )}

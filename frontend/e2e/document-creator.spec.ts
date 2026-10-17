@@ -1,54 +1,15 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { extractText, getDocumentProxy } from "unpdf";
-import type { Conversation } from "../lib/api";
-import type { DocumentFields } from "../lib/documents";
-import { defaultFormData, type NdaFormData } from "../lib/nda";
+import { DISCLAIMER } from "../lib/disclaimer";
+import { defaultFormData } from "../lib/nda";
+import { GREETING, stubChat, type Turn } from "./chat-stub";
 
-const GREETING = "Hi! I can draft NDAs, cloud service agreements and more. What do you need?";
 const emptyParty = { name: "", title: "", company: "", noticeAddress: "" };
-const NDA_FIELDS = defaultFormData as unknown as DocumentFields;
 
-/** A scripted assistant reply: the document it chooses and the fields it records, or an error response. */
-type Turn =
-  | { reply: string; document?: string; fields?: Partial<NdaFormData> | Record<string, unknown> }
-  | { status: number; detail: string };
-
-/**
- * Stubs the chat API with an in-memory backend so no LLM is called: each sent
- * message gets the next scripted turn. Conversations start on `document`
- * (the Mutual NDA unless null). Then opens the page and waits for the greeting.
- */
+/** Stubs the chat API (see stubChat), then opens the page and waits for the greeting. */
 async function openWithChat(page: Page, turns: Turn[] = [], document: string | null = "mutual-nda") {
-  const conversations = new Map<string, Conversation>();
-  await page.route("**/api/conversations**", async (route) => {
-    const request = route.request();
-    const [, , id] = new URL(request.url()).pathname.split("/").filter(Boolean);
-    if (!id) {
-      const created: Conversation = {
-        id: `c${conversations.size + 1}`,
-        messages: [{ role: "assistant", content: GREETING }],
-        document,
-        fields: document ? NDA_FIELDS : { party1: emptyParty, party2: emptyParty },
-      };
-      conversations.set(created.id, created);
-      return route.fulfill({ status: 201, json: created });
-    }
-    const conversation = conversations.get(id);
-    if (!conversation) return route.fulfill({ status: 404, json: { detail: "Conversation not found." } });
-    if (request.method() === "GET") return route.fulfill({ json: conversation });
-
-    const turn = turns.shift()!;
-    if ("status" in turn) return route.fulfill({ status: turn.status, json: { detail: turn.detail } });
-    conversation.messages = [
-      ...conversation.messages,
-      { role: "user", content: request.postDataJSON().content },
-      { role: "assistant", content: turn.reply },
-    ];
-    conversation.document = turn.document ?? conversation.document;
-    conversation.fields = { ...conversation.fields, ...turn.fields } as DocumentFields;
-    return route.fulfill({ json: conversation });
-  });
+  await stubChat(page, turns, document);
   await page.goto("/");
   await expect(chatLog(page).getByText(GREETING)).toBeVisible();
 }
@@ -94,6 +55,8 @@ test("loads the creator with the assistant's greeting, the full agreement and no
   await expect(preview(page).getByRole("heading", { name: "Mutual Non-Disclosure Agreement", exact: true })).toBeVisible();
   await expect(preview(page).getByRole("heading", { name: "Standard Terms" })).toBeAttached();
   await expect(preview(page)).toContainText("Governing Law: [Governing Law]");
+  await expect(preview(page).getByRole("complementary", { name: "Disclaimer" })).toContainText(DISCLAIMER);
+  await expect(page.getByRole("link", { name: "create an account" })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -145,6 +108,7 @@ test("completes an NDA through the chat and downloads it as a PDF with the detai
     "Company Acme Inc. Globex LLC",
     "Notice Address ada@acme.test alan@globex.test",
     "Standard Terms",
+    DISCLAIMER,
   ]) {
     expect(pdf.text).toContain(expected);
   }
@@ -174,16 +138,22 @@ test("resumes the conversation after a reload", async ({ page }) => {
   await expect(preview(page)).toContainText("Governing Law: Delaware");
 });
 
-test("starts over with a fresh conversation and document", async ({ page }) => {
-  await openWithChat(page, [{ reply: "Delaware it is.", fields: { governingLaw: "Delaware" } }]);
-  await say(page, "Delaware law", "Delaware it is.");
+for (const [where, click] of [
+  ["chat panel's button", (page: Page) => page.getByRole("button", { name: "New document" }).click()],
+  ["header link", (page: Page) => page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "New document" }).click()],
+] as const) {
+  test(`starts a fresh conversation and document from the ${where}`, async ({ page }) => {
+    await openWithChat(page, [{ reply: "Delaware it is.", fields: { governingLaw: "Delaware" } }]);
+    await say(page, "Delaware law", "Delaware it is.");
 
-  await page.getByRole("button", { name: "Start over" }).click();
+    await click(page);
 
-  await expect(chatLog(page).getByText("Delaware it is.")).toHaveCount(0);
-  await expect(chatLog(page).getByText(GREETING)).toBeVisible();
-  await expect(preview(page)).toContainText("Governing Law: [Governing Law]");
-});
+    await expect(chatLog(page).getByText(GREETING)).toBeVisible();
+    await expect(chatLog(page).getByText("Delaware it is.")).toHaveCount(0);
+    await expect(preview(page)).toContainText("Governing Law: [Governing Law]");
+    await expect(page).toHaveURL(/\/$/);
+  });
+}
 
 test("shows when the assistant is busy, and Retry resends the message", async ({ page }) => {
   await openWithChat(page, [

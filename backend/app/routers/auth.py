@@ -6,7 +6,7 @@ from fastapi import APIRouter, Cookie, HTTPException, Response, status
 from pydantic import BaseModel, Field
 
 from app import auth
-from app.auth import SESSION_COOKIE, CurrentUser, User
+from app.auth import SESSION_COOKIE, OptionalUser, User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -53,6 +53,6 @@ def signout(response: Response, session: Annotated[str | None, Cookie(alias=SESS
 
 
 @router.get("/me")
-def me(user: CurrentUser) -> User:
-    """Return the signed-in user."""
+def me(user: OptionalUser) -> User | None:
+    """The signed-in user, or null when signed out (signing in is optional)."""
     return user

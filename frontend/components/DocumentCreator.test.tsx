@@ -7,12 +7,14 @@ import type { DocumentFields } from "@/lib/documents";
 import { defaultFormData, type NdaFormData } from "@/lib/nda";
 import { loadDocuments } from "@/lib/templates";
 import { STORAGE_KEY } from "@/lib/useConversation";
+import { UserProvider } from "@/lib/user";
 import { DocumentCreator } from "./DocumentCreator";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), send: vi.fn() }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), get: vi.fn(), send: vi.fn(), me: vi.fn() }));
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   chat: mocks,
+  auth: { me: mocks.me },
 }));
 const { ApiError } = await import("@/lib/api");
 
@@ -77,6 +79,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 9, 13, 12));
   localStorage.clear();
+  window.history.replaceState(null, "", "/");
   mocks.create.mockResolvedValue(conversation());
 });
 afterEach(() => {
@@ -286,12 +289,58 @@ describe("DocumentCreator", () => {
     await say(user, "Delaware");
     await within(log).findByText("Got it.");
 
-    await user.click(screen.getByRole("button", { name: "Start over" }));
+    await user.click(screen.getByRole("button", { name: "New document" }));
 
     expect(await within(log).findByText("Fresh start!")).toBeInTheDocument();
     expect(within(log).queryByText("Got it.")).not.toBeInTheDocument();
     expect(within(preview).getByText("Governing Law: [Governing Law]")).toBeInTheDocument();
     expect(localStorage.getItem(STORAGE_KEY)).toBe("c2");
+  });
+
+  it("opens the conversation named in the URL and tidies the URL", async () => {
+    localStorage.setItem(STORAGE_KEY, "c1");
+    window.history.replaceState(null, "", "/?c=c9");
+    mocks.get.mockResolvedValue(conversation({}, [GREETING], "c9"));
+
+    await setup();
+
+    expect(mocks.get).toHaveBeenCalledWith("c9");
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("c9");
+    expect(window.location.search).toBe("");
+  });
+
+  it("starts a new conversation when the URL asks for one", async () => {
+    localStorage.setItem(STORAGE_KEY, "c1");
+    window.history.replaceState(null, "", "/?new");
+    mocks.create.mockResolvedValue(conversation({}, [GREETING], "c2"));
+
+    await setup();
+
+    expect(mocks.get).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEY)).toBe("c2");
+    expect(window.location.search).toBe("");
+  });
+
+  it("shows the draft disclaimer with the document", async () => {
+    const { preview } = await setup();
+    expect(within(preview).getByRole("complementary", { name: "Disclaimer" })).toHaveTextContent(
+      /Draft only..*reviewed by a qualified lawyer/,
+    );
+  });
+
+  it("suggests signing in to save the document when signed out", async () => {
+    mocks.me.mockResolvedValue(null);
+    render(<UserProvider><DocumentCreator documents={documents} /></UserProvider>);
+    expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin/");
+    expect(screen.getByRole("link", { name: "create an account" })).toHaveAttribute("href", "/signup/");
+  });
+
+  it("does not suggest signing in when signed in", async () => {
+    mocks.me.mockResolvedValue({ id: 1, email: "a@example.com" });
+    render(<UserProvider><DocumentCreator documents={documents} /></UserProvider>);
+    await waitFor(() => expect(mocks.me).toHaveBeenCalled());
+    await screen.findByText(GREETING.content);
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   });
 
   it("gives the preview's checkboxes accessible names", async () => {
@@ -316,7 +365,8 @@ it("shows a placeholder and no download until a document is chosen", async () =>
     mocks.create.mockResolvedValue(choosing());
     const { preview } = await setup();
 
-    expect(preview).toHaveTextContent("Your agreement will appear here once you and the assistant have picked which one you need.");
+    expect(preview).toHaveTextContent("Your agreement will appear here");
+    expect(within(preview).queryByRole("complementary", { name: "Disclaimer" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Download PDF" })).not.toBeInTheDocument();
   });
 

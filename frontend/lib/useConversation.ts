@@ -12,9 +12,14 @@ function errorText(error: unknown): string {
   return error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 }
 
-/** Loads the stored conversation, or starts a new one; a stored id the backend no longer knows starts afresh. */
+/**
+ * Opens the conversation named in the URL (`/?c=<id>`, from My documents), or resumes the stored one, or
+ * starts a new one (`/?new`, or nothing stored). An id the backend no longer knows starts afresh.
+ */
 async function resumeOrCreate(): Promise<Conversation> {
-  const id = localStorage.getItem(STORAGE_KEY);
+  const params = new URLSearchParams(window.location.search);
+  if (params.size) window.history.replaceState(null, "", window.location.pathname);
+  const id = params.has("new") ? null : (params.get("c") ?? localStorage.getItem(STORAGE_KEY));
   if (!id) return chat.create();
   try {
     return await chat.get(id);

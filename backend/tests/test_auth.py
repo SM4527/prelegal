@@ -59,10 +59,10 @@ def test_signin_rejects_wrong_credentials(client, email, password):
     assert response.json() == {"detail": "Incorrect email or password."}
 
 
-def test_me_is_401_when_signed_out(client):
+def test_me_is_null_when_signed_out(client):
     response = client.get("/api/auth/me")
-    assert response.status_code == 401
-    assert response.json() == {"detail": "Please sign in."}
+    assert response.status_code == 200
+    assert response.json() is None
 
 
 def test_signout_ends_the_session(client):
@@ -71,9 +71,9 @@ def test_signout_ends_the_session(client):
 
     assert client.post("/api/auth/signout").status_code == 204
 
-    assert client.get("/api/auth/me").status_code == 401
+    assert client.get("/api/auth/me").json() is None
     client.cookies.set("session", token)
-    assert client.get("/api/auth/me").status_code == 401
+    assert client.get("/api/auth/me").json() is None
 
 
 def test_signout_when_signed_out(client):

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
+import { DISCLAIMER } from "@/lib/disclaimer";
 
 /**
  * Renders a document's markdown as a PDF. The markdown is parsed into an
@@ -12,7 +13,8 @@ import { unified } from "unified";
  */
 
 const styles = StyleSheet.create({
-  page: { paddingVertical: 56, paddingHorizontal: 64, fontFamily: "Helvetica", fontSize: 10, lineHeight: 1.45 },
+  page: { paddingTop: 56, paddingBottom: 72, paddingHorizontal: 64, fontFamily: "Helvetica", fontSize: 10, lineHeight: 1.45 },
+  disclaimer: { position: "absolute", bottom: 28, left: 64, right: 64, fontSize: 7.5, color: "#6b7280", textAlign: "center" },
   h1: { fontSize: 18, fontFamily: "Helvetica-Bold", marginTop: 8, marginBottom: 10 },
   h2: { fontSize: 13, fontFamily: "Helvetica-Bold", marginTop: 10, marginBottom: 6 },
   h3: { fontSize: 11, fontFamily: "Helvetica-Bold", marginTop: 10, marginBottom: 4 },
@@ -121,6 +123,7 @@ export function DocumentPdf({ markdown, title }: { markdown: string; title: stri
     <Document title={title} creator="Prelegal">
       <Page size="LETTER" style={styles.page}>
         {tree.children.map(renderBlock)}
+        <Text fixed style={styles.disclaimer}>{DISCLAIMER}</Text>
       </Page>
     </Document>
   );
